@@ -18,8 +18,10 @@ class Post extends Model
     'user_id',
     'title',
     'content',
+    'image',
     'hot_score',
     'fijada',
+    'shared_from_post_id',
   ];
 
   protected $casts = [
@@ -31,14 +33,21 @@ class Post extends Model
     return $this->belongsToMany(Community::class);
   }
 
+  /** El post original del que fue compartido (si aplica) */
+  public function sharedFrom(): BelongsTo
+  {
+    return $this->belongsTo(Post::class, 'shared_from_post_id');
+  }
+
+  /** Posts que comparten este */
+  public function shares(): HasMany
+  {
+    return $this->hasMany(Post::class, 'shared_from_post_id');
+  }
+
   public function user(): BelongsTo
   {
     return $this->belongsTo(User::class);
-  }
-
-  public function comments(): HasMany
-  {
-    return $this->hasMany(Comment::class);
   }
 
   // Código experimental
@@ -61,7 +70,6 @@ class Post extends Model
     $vote = $this->votes()->where('user_id', Auth::id())->first();
     return $vote?->vote;
   }
-
   public function updateHotScore(): void
   {
     $votes = $this->votes()->sum('vote');
@@ -71,4 +79,10 @@ class Post extends Model
     $this->hot_score = $score;
     $this->saveQuietly();
   }
+
+  // Código experimental - Comentarios.
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
 }

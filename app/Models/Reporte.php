@@ -14,17 +14,32 @@ class Reporte extends Model
     'estado',
     'user_id',
     'post_id',
+    'comment_id',
+    'reported_user_id',
   ];
 
-  // Usuario que reportó
   public function usuario()
   {
     return $this->belongsTo(User::class, 'user_id');
   }
 
-  // Publicación reportada
   public function post()
   {
     return $this->belongsTo(Post::class, 'post_id');
+  }
+
+  public function comment()
+  {
+    return $this->belongsTo(Comment::class, 'comment_id');
+  }
+
+  public function reportedUser()
+  {
+    return $this->belongsTo(User::class, 'reported_user_id');
+  }
+
+  public function getTipoAttribute(): string
+  {
+    return $this->comment_id ? 'comentario' : 'post';
   }
 }

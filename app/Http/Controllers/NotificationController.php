@@ -25,4 +25,21 @@ class NotificationController extends Controller
         Auth::user()->unreadNotifications->markAsRead();
         return back()->with('success', 'Todas las notificaciones marcadas como leídas.');
     }
+
+    public function json()
+    {
+        $notifications = Auth::user()->notifications()->latest()->take(20)->get()->map(function ($n) {
+            return [
+                'id'        => $n->id,
+                'type'      => $n->type,
+                'data'      => $n->data,
+                'read_at'   => $n->read_at,
+                'created_at'=> $n->created_at->toISOString(),
+            ];
+        });
+
+        $unread = Auth::user()->unreadNotifications()->count();
+
+        return response()->json(['notifs' => $notifications, 'sinLeer' => $unread]);
+    }
 }

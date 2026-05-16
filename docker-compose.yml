@@ -1,0 +1,45 @@
+services:
+    # El servidor de Laravel
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: tecnow-app
+        container_name: tecnow-app
+        restart: unless-stopped
+        tty: true
+        environment:
+            SERVICE_NAME: app
+            SERVICE_TAGS: dev
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx.conf:/etc/nginx/http.d/default.conf
+        ports:
+            - "8000:8080"
+        depends_on:
+            - db
+        networks:
+            - tecnow-network
+
+    # La Base de Datos
+    db:
+        image: mysql:8.0
+        container_name: tecnow-db
+        restart: unless-stopped
+        tty: true
+        ports:
+            - "3307:3306"
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+        volumes:
+            - ./docker/mysql:/var/lib/mysql
+        networks:
+            - tecnow-network
+
+networks:
+    tecnow-network:
+        driver: bridge

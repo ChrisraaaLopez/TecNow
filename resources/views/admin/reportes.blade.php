@@ -414,6 +414,21 @@
             <span class="ar-date">{{ $reporte->created_at->format('d/m/Y H:i') }}</span>
           </div>
 
+          {{-- Tipo de reporte --}}
+          @if($reporte->comment_id)
+          <p class="ar-post-line">
+            💬 Comentario reportado:
+            @if($reporte->comment)
+            <span style="color:#374151;font-weight:400">"{{ \Illuminate\Support\Str::limit($reporte->comment->content, 80) }}"</span>
+            <span class="ar-post-author">— por {{ $reporte->comment->user?->name ?? 'Usuario desconocido' }}</span>
+            @if($reporte->comment->post_id)
+            · <a href="{{ route('posts.show', $reporte->comment->post_id) }}" target="_blank" class="ar-post-link">Ver post</a>
+            @endif
+            @else
+            <span style="color:#9ca3af;font-weight:400;font-style:italic">Comentario eliminado</span>
+            @endif
+          </p>
+          @else
           <p class="ar-post-line">
             📄 Post:
             @if($reporte->post)
@@ -425,9 +440,16 @@
             <span style="color:#9ca3af;font-weight:400;font-style:italic">Post eliminado</span>
             @endif
           </p>
+          @endif
 
           <p class="ar-reporter">
             Reportado por <span>{{ $reporte->usuario?->name ?? 'Usuario desconocido' }}</span>
+            @if($reporte->reportedUser)
+            · Usuario reportado: <span>{{ $reporte->reportedUser->name }}</span>
+            @if(!$reporte->reportedUser->activo)
+            <span style="color:#dc2626;font-size:11px"> (suspendido)</span>
+            @endif
+            @endif
           </p>
 
           <div class="ar-motivo-box">
@@ -439,24 +461,34 @@
         </div>
 
         {{-- Acciones --}}
-        @if(!$esResuelto && $reporte->post)
+        @if(!$esResuelto && ($reporte->post || $reporte->comment))
         <div class="ar-actions">
           <form action="{{ route('admin.reportes.resolver', $reporte) }}" method="POST">
             @csrf @method('PATCH')
             <input type="hidden" name="accion" value="descartar">
-            <button type="submit" class="ar-btn-discard">Descartar reporte</button>
+            <button type="submit" class="ar-btn-discard">Descartar</button>
           </form>
           <form action="{{ route('admin.reportes.resolver', $reporte) }}" method="POST"
-            onsubmit="return confirm('¿Eliminar la publicación? Esta acción no se puede deshacer.')">
+            onsubmit="return confirm('¿Eliminar el contenido? Esta acción no se puede deshacer.')">
             @csrf @method('PATCH')
             <input type="hidden" name="accion" value="eliminar">
-            <button type="submit" class="ar-btn-delete">Eliminar publicación</button>
+            <button type="submit" class="ar-btn-delete">Eliminar contenido</button>
           </form>
+          @if($reporte->reportedUser && $reporte->reportedUser->activo)
+          <form action="{{ route('admin.reportes.resolver', $reporte) }}" method="POST"
+            onsubmit="return confirm('¿Suspender a {{ $reporte->reportedUser->name }}?')">
+            @csrf @method('PATCH')
+            <input type="hidden" name="accion" value="suspender">
+            <button type="submit" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;border:none;background:#7c3aed;color:#fff;cursor:pointer;transition:background .15s;width:100%">
+              Suspender usuario
+            </button>
+          </form>
+          @endif
         </div>
         @elseif($esResuelto)
         <p class="ar-resolved-label">Reporte resuelto</p>
         @else
-        <p class="ar-resolved-label">Post ya eliminado</p>
+        <p class="ar-resolved-label">Contenido ya eliminado</p>
         @endif
 
       </div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use App\Models\Reporte;
 use App\Models\User;
+use App\Notifications\SuspensionNotification;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -13,10 +14,10 @@ class AdminController extends Controller
   public function index()
   {
     $stats = [
-      'usuarios'         => User::count(),
-      'posts'            => Post::count(),
+      'usuarios'           => User::count(),
+      'posts'              => Post::count(),
       'reportesPendientes' => Reporte::where('estado', 'pendiente')->count(),
-      'postsFijados'     => Post::where('fijada', true)->count(),
+      'postsFijados'       => Post::where('fijada', true)->count(),
     ];
 
     $reportesRecientes = Reporte::with(['usuario', 'post'])
@@ -31,7 +32,7 @@ class AdminController extends Controller
   // ─── Reportes ─────────────────────────────────────────────────
   public function reportes()
   {
-    $reportes = Reporte::with(['usuario', 'post.user'])
+    $reportes = Reporte::with(['usuario', 'post.user', 'comment.user', 'reportedUser'])
       ->orderByRaw("FIELD(estado, 'pendiente', 'resuelto_eliminado', 'resuelto_descartado')")
       ->latest()
       ->paginate(15);
@@ -41,18 +42,27 @@ class AdminController extends Controller
 
   public function resolverReporte(Request $request, Reporte $reporte)
   {
-    $accion = $request->input('accion'); // 'descartar' | 'eliminar'
+    $accion = $request->input('accion'); // 'descartar' | 'eliminar' | 'suspender'
 
     if ($accion === 'eliminar') {
-      $reporte->post?->delete();
+      if ($reporte->comment_id) {
+        $reporte->comment?->delete();
+      } else {
+        $reporte->post?->delete();
+      }
       $reporte->update(['estado' => 'resuelto_eliminado']);
-    } else {
-      $reporte->update(['estado' => 'resuelto_descartado']);
+      return back()->with('success', 'Contenido eliminado y reporte resuelto.');
     }
 
-    return back()->with('success', $accion === 'eliminar'
-      ? 'Publicación eliminada y reporte resuelto.'
-      : 'Reporte descartado correctamente.');
+    if ($accion === 'suspender' && $reporte->reportedUser) {
+      $reporte->reportedUser->update(['activo' => false]);
+      $reporte->reportedUser->notify(new SuspensionNotification(true));
+      $reporte->update(['estado' => 'resuelto_eliminado']);
+      return back()->with('success', "Usuario {$reporte->reportedUser->name} suspendido.");
+    }
+
+    $reporte->update(['estado' => 'resuelto_descartado']);
+    return back()->with('success', 'Reporte descartado correctamente.');
   }
 
   // ─── Usuarios ─────────────────────────────────────────────────
@@ -74,7 +84,7 @@ class AdminController extends Controller
     return view('admin.usuarios', compact('usuarios'));
   }
 
-  public function cambiarRol(Request $request, User $user)
+  public function updateRole(Request $request, User $user)
   {
     $request->validate([
       'rol' => ['required', 'in:estudiante,docente,admin'],
@@ -87,12 +97,14 @@ class AdminController extends Controller
 
   public function suspender(User $user)
   {
-    // No permitir suspender al propio admin
     if ($user->id === auth()->id()) {
       return back()->with('error', 'No puedes suspenderte a ti mismo.');
     }
 
     $user->update(['activo' => !$user->activo]);
+    $user->refresh();
+
+    $user->notify(new SuspensionNotification(!$user->activo));
 
     $mensaje = $user->activo ? 'Cuenta reactivada.' : 'Cuenta suspendida.';
 

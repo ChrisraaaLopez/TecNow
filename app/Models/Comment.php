@@ -4,14 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Comment extends Model
 {
-    protected $fillable = [
-        'user_id',
-        'post_id',
-        'content',
-    ];
+    protected $fillable = ['post_id', 'user_id', 'parent_id', 'content'];
 
     public function user(): BelongsTo
     {
@@ -21,5 +18,17 @@ class Comment extends Model
     public function post(): BelongsTo
     {
         return $this->belongsTo(Post::class);
+    }
+
+    // Comentarios hijos (respuestas)
+    public function replies(): HasMany
+    {
+        return $this->hasMany(Comment::class, 'parent_id');
+    }
+
+    // Votos
+    public function votes(): HasMany
+    {
+        return $this->hasMany(CommentVote::class);
     }
 }

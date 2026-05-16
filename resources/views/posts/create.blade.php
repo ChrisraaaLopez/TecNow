@@ -11,10 +11,6 @@
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
     </svg>
-    <a href="{{ route('perfil') }}" class="hover:text-blue-400 transition-colors">Mi Perfil</a>
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-    </svg>
     <span class="text-gray-700">Nueva publicación</span>
   </div>
 </div>
@@ -23,15 +19,19 @@
 <div class="max-w-[1400px] mx-auto px-6 pb-12">
   <div class="max-w-2xl mx-auto" x-data="postForm()">
 
-    {{-- Título de página --}}
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-white">Nueva publicación</h1>
+      <h1 class="text-2xl font-bold">Nueva publicación</h1>
       <p class="text-sm text-gray-400 mt-1">Comparte algo con tu comunidad</p>
     </div>
 
-    {{-- Errores de validación --}}
+    @if(session('error'))
+    <div class="mb-6 bg-red-400/20 border border-red-700 rounded-lg p-4">
+      <p class="text-sm text-red-400">{{ session('error') }}</p>
+    </div>
+    @endif
+
     @if($errors->any())
-    <div class="mb-6 bg-red-400/20 border border-red-700 font-bold rounded-lg p-4">
+    <div class="mb-6 bg-red-400/20 border border-red-700 rounded-lg p-4">
       <p class="text-sm font-semibold text-red-400 mb-2">Por favor corrige los siguientes errores:</p>
       <ul class="text-sm text-red-500 space-y-1 list-disc list-inside">
         @foreach($errors->all() as $error)
@@ -41,11 +41,9 @@
     </div>
     @endif
 
-    {{-- FORMULARIO --}}
     <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
       @csrf
 
-      {{-- Tarjeta principal --}}
       <div class="bg-card border border-border rounded-lg overflow-hidden">
 
         {{-- Info del autor --}}
@@ -76,36 +74,67 @@
               placeholder="Dale un título a tu publicación..."
               maxlength="150"
               required
-              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-primary transition-colors
-                                       {{ $errors->has('title') ? 'border-red-500' : 'border-border' }}" />
+              class="w-full px-4 py-2.5 rounded-lg border bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-primary transition-colors
+                     {{ $errors->has('title') ? 'border-red-500' : 'border-gray-300' }}" />
             @error('title')
             <p class="text-xs text-red-400 mt-1">{{ $message }}</p>
             @enderror
           </div>
 
-          {{-- Comunidad   (Parte experimental, agregar cuando las comunidades funcionen correctamente)
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1.5">
-                                Comunidad <span class="text-red-400">*</span>
-                            </label>
-                            <select
-                                name="community_id"
-                                required
-                                class="w-full px-4 py-2.5 rounded-lg border border-gray-100 bg-gray-100 text-gray-800 focus:outline-none focus:border-primary transition-colors
-                                       -(-( $errors->has('community_id') ? 'border-red-500' : 'border-border' )-)-"
-                            >
-                                <option value="">Selecciona una comunidad...</option>
-                                foreach($communities as $community)
-                                    <option value="-(-( $community->id )-)-" -(-( old('community_id') == $community->id ? 'selected' : '' )-)->
-                                        -(-( $community->icon ?? '' )-)- -(-( $community->name )-)-
-                                    </option>
-                                (a)endforeach
-                            </select>
-                            (a)error('community_id')
-                            <p class="text-xs text-red-400 mt-1">-(-( $message )-)-</p>
-                            (a)enderror
-                        </div>
-                        --}}
+          {{-- Comunidad --}}
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1.5">
+              Comunidad <span class="text-gray-500 font-normal">(opcional)</span>
+            </label>
+            @php
+              $avisos   = $communities->where('tipo', 'avisos');
+              $carreras = $communities->where('tipo', 'carrera');
+              $sinComunidades = $carreras->isEmpty() && $avisos->isEmpty();
+            @endphp
+            @if($sinComunidades && Auth::user()->rol !== 'admin')
+              {{-- Sin comunidades unidas --}}
+              <div class="flex items-center gap-3 px-4 py-3 rounded-lg border border-yellow-300 bg-yellow-50 text-sm text-yellow-700">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>
+                  No perteneces a ninguna comunidad todavía.
+                  <a href="{{ route('dashboard') }}" class="underline font-medium hover:text-yellow-900">Únete a una</a>
+                  para poder publicar en ella.
+                </span>
+              </div>
+              <input type="hidden" name="community_id" value="">
+            @else
+              <select
+                name="community_id"
+                class="w-full px-4 py-2.5 rounded-lg border bg-gray-100 text-gray-800 focus:outline-none focus:border-primary transition-colors
+                       {{ $errors->has('community_id') ? 'border-red-500' : 'border-gray-300' }}">
+                <option value="">Sin comunidad (foro general)</option>
+                @if($avisos->count() && Auth::user()->rol === 'admin')
+                <optgroup label="📢 Oficial">
+                  @foreach($avisos as $c)
+                  <option value="{{ $c->id }}" {{ old('community_id', $selectedCommunityId) == $c->id ? 'selected' : '' }}>
+                    {{ $c->name }}
+                  </option>
+                  @endforeach
+                </optgroup>
+                @endif
+                @if($carreras->count())
+                <optgroup label="🎓 Mis comunidades">
+                  @foreach($carreras as $c)
+                  <option value="{{ $c->id }}" {{ old('community_id', $selectedCommunityId) == $c->id ? 'selected' : '' }}>
+                    {{ $c->name }}
+                  </option>
+                  @endforeach
+                </optgroup>
+                @endif
+              </select>
+            @endif
+            @error('community_id')
+            <p class="text-xs text-red-400 mt-1">{{ $message }}</p>
+            @enderror
+          </div>
 
           {{-- Contenido --}}
           <div>
@@ -118,8 +147,8 @@
               placeholder="¿Qué quieres compartir con tu comunidad?"
               required
               x-model="content"
-              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-primary transition-colors resize-none
-                                       {{ $errors->has('content') ? 'border-red-500' : 'border-border' }}">{{ old('content') }}</textarea>
+              class="w-full px-4 py-2.5 rounded-lg border bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-primary transition-colors resize-none
+                     {{ $errors->has('content') ? 'border-red-500' : 'border-gray-300' }}">{{ old('content') }}</textarea>
             <div class="flex justify-between mt-1">
               @error('content')
               <p class="text-xs text-red-400">{{ $message }}</p>
@@ -135,22 +164,19 @@
             <label class="block text-sm font-medium text-gray-400 mb-1.5">
               Imagen <span class="text-gray-500 font-normal">(opcional)</span>
             </label>
-
-            {{-- Zona de drop --}}
             <div
               class="relative border-2 border-dashed rounded-lg transition-colors cursor-pointer
-                                       {{ $errors->has('image') ? 'border-red-500' : 'border-border hover:border-primary' }}"
+                     {{ $errors->has('image') ? 'border-red-500' : 'border-gray-300 hover:border-primary' }}"
               @click="$refs.imageInput.click()"
               @dragover.prevent="dragging = true"
               @dragleave.prevent="dragging = false"
               @drop.prevent="handleDrop($event)"
-              :class="dragging ? 'border-primary bg-primary/5' : ''">
+              :class="dragging ? 'border-primary bg-blue-50' : ''">
+
               {{-- Preview --}}
               <div x-show="preview" class="relative">
                 <img :src="preview" class="w-full max-h-64 object-cover rounded-lg" />
-                <button
-                  type="button"
-                  @click.stop="clearImage()"
+                <button type="button" @click.stop="clearImage()"
                   class="absolute top-2 right-2 bg-black/70 hover:bg-black text-white rounded-full p-1.5 transition-colors">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -160,23 +186,17 @@
 
               {{-- Placeholder --}}
               <div x-show="!preview" class="flex flex-col items-center justify-center py-8 px-4 text-center">
-                <svg class="w-10 h-10 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-10 h-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <p class="text-sm text-gray-400">Arrastra una imagen o <span class="text-primary">haz clic para seleccionar</span></p>
-                <p class="text-xs text-gray-600 mt-1">PNG, JPG, GIF, WEBP — máx. 2 MB</p>
+                <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF, WEBP — máx. 2 MB</p>
               </div>
 
-              <input
-                type="file"
-                name="image"
-                accept="image/*"
-                class="hidden"
-                x-ref="imageInput"
-                @change="handleFile($event)" />
+              <input type="file" name="image" accept="image/*" class="hidden"
+                x-ref="imageInput" @change="handleFile($event)" />
             </div>
-
             @error('image')
             <p class="text-xs text-red-400 mt-1">{{ $message }}</p>
             @enderror
@@ -187,13 +207,13 @@
 
       {{-- Acciones --}}
       <div class="flex items-center justify-between gap-3">
-        <a href="{{ route('perfil') }}"
-          class="px-5 py-2.5 rounded-lg border border-gray-500 text-gray-500 hover:bg-gray-800 hover:border-gray-800 hover:text-gray-100 transition-colors text-sm">
+        <a href="{{ route('dashboard') }}"
+          class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors text-sm">
           Cancelar
         </a>
-        <button
-          type="submit"
-          class="px-6 py-2.5 rounded-lg bg-primary border border-gray-500 text-gray-500 hover:bg-blue-700 hover:text-white hover:border-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
+        <button type="submit"
+          class="px-6 py-2.5 rounded-lg text-white hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+          style="background:#1e40af">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -205,12 +225,10 @@
   </div>
 </div>
 
-{{-- Alpine component --}}
 <script>
   function postForm() {
     return {
-      content: '{{ old('
-      content ') }}',
+      content: `{{ old('content') }}`,
       preview: null,
       dragging: false,
 
@@ -223,7 +241,6 @@
         this.dragging = false;
         const file = event.dataTransfer.files[0];
         if (file && file.type.startsWith('image/')) {
-          // Asignar al input real para que se envíe en el form
           const dt = new DataTransfer();
           dt.items.add(file);
           this.$refs.imageInput.files = dt.files;
@@ -233,9 +250,7 @@
 
       loadPreview(file) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          this.preview = e.target.result;
-        };
+        reader.onload = (e) => { this.preview = e.target.result; };
         reader.readAsDataURL(file);
       },
 
