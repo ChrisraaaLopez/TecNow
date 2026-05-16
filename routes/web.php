@@ -79,7 +79,6 @@ Route::get('/recuperar', [RecoverPasswordController::class, 'show'])->name('reco
 Route::post('/recuperar', [RecoverPasswordController::class, 'findUser'])->name('recover.find');
 Route::post('/recuperar/reset', [RecoverPasswordController::class, 'reset'])->name('recover.reset');
 
-<<<<<<< HEAD
 
 require __DIR__.'/auth.php';
 
@@ -97,6 +96,3 @@ Route::prefix('admin')->middleware(['auth', 'esAdmin'])->name('admin.')->group(f
     Route::patch('/posts/{post}/fijar',           [AdminController::class, 'fijarPost'])      ->name('posts.fijar');
     Route::delete('/posts/{post}',                [AdminController::class, 'eliminarPost'])   ->name('posts.eliminar');
 });
-=======
-require __DIR__.'/auth.php';
->>>>>>> ca510687c305ed0539a3435d7594b4b3302f8a56
