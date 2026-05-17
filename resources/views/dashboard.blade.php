@@ -298,7 +298,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <span class="text-sm">{{ $post->comments->count() }}</span>
+                    <span id="comment-count-{{ $post->id }}" class="text-sm">{{ $post->comments->count() }}</span>
                 </a>
             </div>
 
@@ -459,23 +459,18 @@
 <script>
 (function() {
     const postIds = @json($posts->pluck('id'));
-    function updateAlpineVote(postId, karma) {
-        const el = document.getElementById('vote-bar-' + postId);
-        if (el && window.Alpine && window.Alpine.$data) {
-            window.Alpine.$data(el).karma = karma;
-        }
-    }
-    function setupRealtimeListeners() {
+    function setup() {
         postIds.forEach(function(postId) {
             window.Echo.channel('posts.' + postId)
-                .listen('.PostVoted', function(e) { updateAlpineVote(postId, e.karma); });
+                .listen('.PostVoted', function(e) { window.RealtimeUtils.updateVote(postId, e.karma); })
+                .listen('.CommentAdded', function(e) { window.RealtimeUtils.updateCommentCount(postId, e.commentCount); });
+        });
+        window.Echo.channel('feed').listen('.NewPost', function(e) {
+            window.RealtimeUtils.showNewContentBanner('Nueva publicación de ' + e.authorName);
         });
     }
-    if (window.Echo) {
-        setupRealtimeListeners();
-    } else {
-        window.addEventListener('echo-ready', setupRealtimeListeners, { once: true });
-    }
+    if (window.Echo) { setup(); }
+    else { window.addEventListener('echo-ready', setup, { once: true }); }
 })();
 </script>
 @endsection

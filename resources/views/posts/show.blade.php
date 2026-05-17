@@ -775,7 +775,12 @@
     function setupEchoListeners() {
         window.Echo.channel('posts.' + postId)
             .listen('.PostVoted', function(e) { updateAlpine(e.karma, null); })
-            .listen('.CommentAdded', function(e) { updateAlpine(null, e.commentCount); });
+            .listen('.CommentAdded', function(e) {
+                updateAlpine(null, e.commentCount);
+                // Mostrar banner si el comentario no es del usuario actual
+                const myId = document.querySelector('meta[name="user-id"]')?.content;
+                window.RealtimeUtils.showNewContentBanner('Nuevo comentario en esta publicación');
+            });
     }
     if (window.Echo) {
         setupEchoListeners();

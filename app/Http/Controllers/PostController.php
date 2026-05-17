@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewPostBroadcastEvent;
 use App\Models\Community;
 use App\Models\Post;
 use Illuminate\Http\Request;
@@ -62,6 +63,11 @@ class PostController extends Controller
             'content' => $validated['content'],
             'image'   => $imagePath,
         ]);
+
+        // Broadcast nueva publicación en tiempo real
+        try {
+            NewPostBroadcastEvent::dispatch($post->id, Auth::user()->name, $post->title);
+        } catch (\Exception $e) {}
 
         if (!empty($validated['community_id'])) {
             $post->communities()->attach($validated['community_id']);

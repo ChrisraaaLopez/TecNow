@@ -302,17 +302,17 @@
 <script>
 (function() {
     const postIds = @json($posts->pluck('id'));
-    function updateAlpineVote(postId, karma) {
-        const el = document.getElementById('vote-bar-' + postId);
-        if (el && window.Alpine && window.Alpine.$data) window.Alpine.$data(el).karma = karma;
-    }
-    function setupRealtimeListeners() {
+    function setup() {
         postIds.forEach(function(postId) {
-            window.Echo.channel('posts.' + postId).listen('.PostVoted', function(e) { updateAlpineVote(postId, e.karma); });
+            window.Echo.channel('posts.' + postId)
+                .listen('.PostVoted', function(e) { window.RealtimeUtils.updateVote(postId, e.karma); });
+        });
+        window.Echo.channel('feed').listen('.NewPost', function(e) {
+            window.RealtimeUtils.showNewContentBanner('Nueva publicación de ' + e.authorName);
         });
     }
-    if (window.Echo) { setupRealtimeListeners(); }
-    else { window.addEventListener('echo-ready', setupRealtimeListeners, { once: true }); }
+    if (window.Echo) { setup(); }
+    else { window.addEventListener('echo-ready', setup, { once: true }); }
 })();
 </script>
 @endsection
