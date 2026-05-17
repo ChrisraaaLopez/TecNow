@@ -218,7 +218,7 @@
         @endif
 
         {{-- Contenedor de Karma y Comentarios --}}
-        <div class="flex items-center gap-1 mt-2" x-data="{
+        <div id="vote-bar-{{ $post->id }}" class="flex items-center gap-1 mt-2" x-data="{
                             karma: {{ $karma }},
                             userVote: {{ $userVote ?? 'null' }},
                             loading: false,
@@ -456,4 +456,26 @@
     </form>
   </div>
 </div>
+<script>
+(function() {
+    const postIds = @json($posts->pluck('id'));
+    function updateAlpineVote(postId, karma) {
+        const el = document.getElementById('vote-bar-' + postId);
+        if (el && window.Alpine && window.Alpine.$data) {
+            window.Alpine.$data(el).karma = karma;
+        }
+    }
+    function setupRealtimeListeners() {
+        postIds.forEach(function(postId) {
+            window.Echo.channel('posts.' + postId)
+                .listen('.PostVoted', function(e) { updateAlpineVote(postId, e.karma); });
+        });
+    }
+    if (window.Echo) {
+        setupRealtimeListeners();
+    } else {
+        window.addEventListener('echo-ready', setupRealtimeListeners, { once: true });
+    }
+})();
+</script>
 @endsection
