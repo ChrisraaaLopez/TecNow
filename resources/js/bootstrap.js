@@ -23,3 +23,6 @@ window.Echo = new Echo({
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
 });
+
+// Notificar a Alpine.js que Echo está listo
+window.dispatchEvent(new Event('echo-ready'));

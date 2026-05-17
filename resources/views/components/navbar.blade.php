@@ -377,13 +377,12 @@ function notificacionesPanel() {
     sinLeer: {{ Auth::user()->unreadNotifications->count() }},
 
     init() {
-      // Escuchar notificaciones en tiempo real via Reverb
       const userId = document.querySelector('meta[name="user-id"]')?.content;
-      if (userId && window.Echo) {
+      const setupEcho = () => {
+        if (!userId) return;
         window.Echo.private(`App.Models.User.${userId}`)
           .notification((notification) => {
             this.sinLeer++;
-            // Agregar al inicio de la lista si el panel está abierto
             if (this.open) {
               this.notifs.unshift({
                 id: notification.id,
@@ -394,6 +393,11 @@ function notificacionesPanel() {
               });
             }
           });
+      };
+      if (userId && window.Echo) {
+        setupEcho();
+      } else if (userId) {
+        window.addEventListener('echo-ready', setupEcho, { once: true });
       }
     },
 

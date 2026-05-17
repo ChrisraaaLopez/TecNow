@@ -231,10 +231,15 @@
                             commentCount: {{ $post->comments->count() }},
                             loading: false,
                             init() {
-                                if (window.Echo) {
+                                const setupEcho = () => {
                                     window.Echo.channel('posts.{{ $post->id }}')
                                         .listen('.PostVoted', (e) => { this.karma = e.karma; })
                                         .listen('.CommentAdded', (e) => { this.commentCount = e.commentCount; });
+                                };
+                                if (window.Echo) {
+                                    setupEcho();
+                                } else {
+                                    window.addEventListener('echo-ready', setupEcho, { once: true });
                                 }
                             },
                             async vote(value) {
