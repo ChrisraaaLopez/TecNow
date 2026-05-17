@@ -292,7 +292,7 @@
 
             {{-- Contador de comentarios --}}
             <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                <a href="{{ route('posts.show', $post) }}"
+                <a href="{{ route('posts.show', $post) }}#comentarios"
                    class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -301,6 +301,9 @@
                     <span class="text-sm">{{ $post->comments->count() }}</span>
                 </a>
             </div>
+
+            {{-- Botón compartir --}}
+            <x-share-button :post="$post" />
         </div>
       </div>
       @empty

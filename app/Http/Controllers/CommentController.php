@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\Comment;
+use App\Notifications\NuevoComentarioNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CommentController extends Controller
 {
-    //
     public function store(Request $request, Post $post)
     {
         $validated = $request->validate([
@@ -17,12 +17,25 @@ class CommentController extends Controller
             'parent_id' => 'nullable|exists:comments,id',
         ]);
 
-        Comment::create([
+        $comment = Comment::create([
             'post_id'   => $post->id,
             'user_id'   => Auth::id(),
             'parent_id' => $validated['parent_id'] ?? null,
             'content'   => $validated['content'],
         ]);
+
+        // Notificar al autor del post (si no es el mismo que comenta)
+        if ($post->user_id !== Auth::id()) {
+            $post->user->notify(new NuevoComentarioNotification($comment));
+        }
+
+        // Si es una respuesta, notificar también al autor del comentario padre
+        if (!empty($validated['parent_id'])) {
+            $parentComment = Comment::find($validated['parent_id']);
+            if ($parentComment && $parentComment->user_id !== Auth::id() && $parentComment->user_id !== $post->user_id) {
+                $parentComment->user->notify(new NuevoComentarioNotification($comment));
+            }
+        }
 
         return back();
     }
