@@ -85,10 +85,11 @@
   <main class="flex-1 px-4 lg:px-6 py-6">
     <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
       <div class="flex gap-2">
-        @foreach (['reciente' => 'Reciente', 'popular' => 'Popular', 'trending' => 'Trending'] as $key => $label)
-        <a href="{{ route('dashboard', array_filter(['sort' => $key, 'q' => $query])) }}"
-          class="px-4 py-2 rounded-lg transition-colors text-sm
-                 {{ $sort === $key ? 'bg-blue-700 text-white' : 'bg-card hover:bg-muted text-foreground border border-border' }}">
+        @foreach (['popular' => 'Popular', 'reciente' => 'Reciente', 'trending' => 'Trending'] as $key => $label)
+        <button @click="filter = '{{ $key }}'"
+          :class="filter === '{{ $key }}' ? 'bg-blue-700 text-white' :
+                                'bg-card hover:bg-muted text-foreground border border-border'"
+          class="px-4 py-2 rounded-lg transition-colors text-sm">
           {{ $label }}
         </a>
         @endforeach
@@ -310,12 +311,6 @@
                     <span class="text-sm">{{ $post->comments->count() }}</span>
                 </a>
             </div>
-
-            {{-- Separador --}}
-            <span class="text-gray-700 mx-1">·</span>
-
-            {{-- Botón compartir --}}
-            <x-share-button :post="$post" />
         </div>
       </div>
       @empty

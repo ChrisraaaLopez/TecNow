@@ -224,14 +224,6 @@
       <h1 class="text-xl font-bold mb-3">{{ $post->title }}</h1>
       <p class="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{{ $post->content }}</p>
 
-      {{-- Imagen del post --}}
-      @if($post->image)
-      <div class="mt-4 rounded-lg overflow-hidden border border-border">
-        <img src="{{ Storage::url($post->image) }}" alt="Imagen de la publicación"
-          class="w-full max-h-[500px] object-contain bg-gray-50" />
-      </div>
-      @endif
-
 
         {{-- Contenedor de Karma y Comentarios --}}
         <div class="flex items-center gap-1 mt-2" x-data="{
@@ -308,7 +300,7 @@
 
             {{-- Contador de comentarios --}}
             <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                <a href="#comentarios"
+                <a href=""
                    class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -317,12 +309,6 @@
                     <span class="text-sm">{{ $post->comments->count() }}</span>
                 </a>
             </div>
-
-            {{-- Separador --}}
-            <span class="text-gray-700 mx-1">·</span>
-
-            {{-- Botón compartir --}}
-            <x-share-button :post="$post" />
         </div>
     </div>
 
@@ -373,19 +359,17 @@
 
                   <div class="flex gap-3">
                       {{-- Avatar --}}
-                      <a href="{{ route('perfil.show', $comment->user->username) }}"
-                        class="w-8 h-8 rounded-full overflow-hidden border border-gray-600 relative flex-shrink-0 mt-1 block hover:opacity-80 transition-opacity">
+                      <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-600 relative flex-shrink-0 mt-1">
                           <img src="{{ asset('avatars/' . $comment->user->avatar) }}" class="w-full h-full object-cover" />
                           @if($comment->user->marco)
                               <img src="{{ asset('marcos/' . $comment->user->marco) }}" class="absolute inset-0 w-full h-full object-cover z-10" />
                           @endif
-                      </a>
+                      </div>
 
                       <div class="flex-1 min-w-0">
                           {{-- Autor y fecha --}}
                           <div class="flex items-center gap-2 mb-1">
-                              <a href="{{ route('perfil.show', $comment->user->username) }}"
-                                class="text-sm font-semibold hover:text-primary transition-colors">{{ $comment->user->name }}</a>
+                              <span class="text-sm font-semibold">{{ $comment->user->name }}</span>
                               <span class="text-xs text-muted-foreground">{{ $comment->created_at->diffForHumans() }}</span>
                           </div>
 
@@ -500,45 +484,6 @@
                                       </button>
                                   </form>
                               @endif
-
-                              {{-- Reportar comentario --}}
-                              @if($comment->user_id !== Auth::id())
-                              <div x-data="{ showReportComment: false }">
-                                  <button @click="showReportComment = !showReportComment"
-                                          class="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1">
-                                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H9.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
-                                      </svg>
-                                      Reportar
-                                  </button>
-                                  <div x-show="showReportComment" x-cloak
-                                       class="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                      <form method="POST" action="{{ route('reportes.store') }}" class="flex flex-col gap-2">
-                                          @csrf
-                                          <input type="hidden" name="comment_id" value="{{ $comment->id }}">
-                                          <select name="motivo" required
-                                                  class="w-full px-3 py-1.5 rounded border border-gray-300 text-xs text-gray-900 bg-white">
-                                              <option value="">Motivo del reporte...</option>
-                                              <option value="spam">Spam</option>
-                                              <option value="contenido inapropiado">Contenido inapropiado</option>
-                                              <option value="acoso">Acoso</option>
-                                              <option value="desinformación">Desinformación</option>
-                                              <option value="otro">Otro</option>
-                                          </select>
-                                          <textarea name="descripcion" rows="2"
-                                                    placeholder="Descripción opcional..."
-                                                    class="w-full px-3 py-1.5 rounded border border-gray-300 text-xs text-gray-900 bg-white resize-none"></textarea>
-                                          <div class="flex gap-2 justify-end">
-                                              <button type="button" @click="showReportComment = false"
-                                                      class="text-xs px-3 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100">Cancelar</button>
-                                              <button type="submit"
-                                                      class="text-xs px-3 py-1 rounded text-white bg-red-500 hover:bg-red-600">Enviar reporte</button>
-                                          </div>
-                                      </form>
-                                  </div>
-                              </div>
-                              @endif
                           </div>
 
                           {{-- Formulario de respuesta --}}
@@ -590,17 +535,15 @@
                                       @endphp
 
                                       <div class="flex gap-3">
-                                          <a href="{{ route('perfil.show', $reply->user->username) }}"
-                                            class="w-7 h-7 rounded-full overflow-hidden border border-gray-600 relative flex-shrink-0 mt-0.5 block hover:opacity-80 transition-opacity">
+                                          <div class="w-7 h-7 rounded-full overflow-hidden border border-gray-600 relative flex-shrink-0 mt-0.5">
                                               <img src="{{ asset('avatars/' . $reply->user->avatar) }}" class="w-full h-full object-cover" />
                                               @if($reply->user->marco)
                                                   <img src="{{ asset('marcos/' . $reply->user->marco) }}" class="absolute inset-0 w-full h-full object-cover z-10" />
                                               @endif
-                                          </a>
+                                          </div>
                                           <div class="flex-1 min-w-0">
                                               <div class="flex items-center gap-2 mb-1">
-                                                  <a href="{{ route('perfil.show', $reply->user->username) }}"
-                                                    class="text-sm font-semibold hover:text-primary transition-colors">{{ $reply->user->name }}</a>
+                                                  <span class="text-sm font-semibold">{{ $reply->user->name }}</span>
                                                   <span class="text-xs text-muted-foreground">{{ $reply->created_at->diffForHumans() }}</span>
                                               </div>
                                               <p class="text-sm text-foreground whitespace-pre-wrap">{{ $reply->content }}</p>

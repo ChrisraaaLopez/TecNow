@@ -136,22 +136,17 @@ class PostController extends Controller
 
     public function show(Post $post)
     {
-        $post->load(['user', 'communities', 'votes', 'sharedFrom.user']);
-        $communities = Community::withCount('users')->get();
+        $post->load(['user', 'communities', 'votes']);
+        $communities = \App\Models\Community::withCount('users')->get();
 
+        // Comentarios de primer nivel con sus replies y votos
         $comments = $post->comments()
             ->whereNull('parent_id')
             ->with(['user', 'votes', 'replies.user', 'replies.votes'])
             ->latest()
             ->get();
 
-        $stats = [
-            'miembros'      => \App\Models\User::where('activo', true)->count(),
-            'publicaciones' => \App\Models\Post::whereDate('created_at', today())->count(),
-            'comunidades'   => \App\Models\Community::count(),
-        ];
-
-        return view('posts.show', compact('post', 'communities', 'comments', 'stats'));
+        return view('posts.show', compact('post', 'communities', 'comments'));
     }
 
     public function popular()

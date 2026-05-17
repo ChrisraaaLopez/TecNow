@@ -10,7 +10,6 @@ use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommentVoteController;
-use App\Http\Controllers\ReporteController;
 
 Route::get('/', function () {
     return redirect('/dashboard');
@@ -19,6 +18,7 @@ Route::get('/', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
         $communities = \App\Models\Community::withCount('users')->get();
+        $posts = \App\Models\Post::with(['user', 'communities', 'votes', 'comments'])->latest()->get();
 
         $sort  = $request->query('sort', 'reciente');
         $query = $request->query('q', '');
@@ -106,12 +106,9 @@ Route::middleware('auth')->group(function () {
     // Admin - Gestión de roles
 
     // Rutas para gestión de Comentarios
-    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store')->middleware('noSuspendido');
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/{comment}/vote', [CommentVoteController::class, 'vote'])->name('comments.vote');
-
-    // Reportes
-    Route::post('/reportes', [ReporteController::class, 'store'])->name('reportes.store')->middleware('noSuspendido');
 });
 
 // Recuperar contraseñas
