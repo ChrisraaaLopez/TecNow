@@ -26,14 +26,6 @@
         </svg>
         <span>Popular</span>
       </a>
-      <a href="{{ route('dashboard', ['sort' => 'trending']) }}"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-        </svg>
-        <span>Trending</span>
-      </a>
     </nav>
     <div class="border-t border-sidebar-border pt-4">
       <div class="flex items-center justify-between mb-3 px-3">
@@ -300,7 +292,7 @@
 
             {{-- Contador de comentarios --}}
             <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                <a href=""
+                <a href="#comentarios"
                    class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -309,11 +301,14 @@
                     <span class="text-sm">{{ $post->comments->count() }}</span>
                 </a>
             </div>
+
+            {{-- Botón compartir --}}
+            <x-share-button :post="$post" />
         </div>
     </div>
 
       {{-- SECCIÓN DE COMENTARIOS --}}
-      <div class="mt-4 bg-card border border-border rounded-lg p-6">
+      <div id="comentarios" class="mt-4 bg-card border border-border rounded-lg p-6">
 
           {{-- Encabezado --}}
           <h2 class="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wide">

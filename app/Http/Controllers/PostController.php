@@ -146,7 +146,13 @@ class PostController extends Controller
             ->latest()
             ->get();
 
-        return view('posts.show', compact('post', 'communities', 'comments'));
+        $stats = [
+            'miembros'      => \App\Models\User::where('activo', true)->count(),
+            'publicaciones' => Post::whereDate('created_at', today())->count(),
+            'comunidades'   => \App\Models\Community::count(),
+        ];
+
+        return view('posts.show', compact('post', 'communities', 'comments', 'stats'));
     }
 
     public function popular()

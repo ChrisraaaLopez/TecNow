@@ -26,14 +26,6 @@
         </svg>
         <span>Popular</span>
       </a>
-      <a href="{{ route('dashboard', ['sort' => 'trending']) }}"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg {{ $sort === 'trending' ? 'bg-secondary text-secondary-foreground' : 'hover:bg-sidebar-accent transition-colors' }}">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-        </svg>
-        <span>Trending</span>
-      </a>
     </nav>
     <div class="border-t border-sidebar-border pt-4">
       <div class="flex items-center justify-between mb-3 px-3">
@@ -85,7 +77,7 @@
   <main class="flex-1 px-4 lg:px-6 py-6">
     <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
       <div class="flex gap-2">
-        @foreach (['popular' => 'Popular', 'reciente' => 'Reciente', 'trending' => 'Trending'] as $key => $label)
+        @foreach (['popular' => 'Popular', 'reciente' => 'Reciente'] as $key => $label)
         <a href="{{ route('dashboard', ['sort' => $key]) }}"
           class="px-4 py-2 rounded-lg transition-colors text-sm {{ $sort === $key ? 'bg-blue-700 text-white' : 'bg-card hover:bg-muted text-foreground border border-border' }}">
           {{ $label }}
