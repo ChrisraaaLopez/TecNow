@@ -11,5 +11,9 @@ Artisan::command('inspire', function () {
 
 // Mantener la BD activa (evita cold-start de ProxySQL en Laravel Cloud)
 Schedule::call(function () {
-    DB::select('SELECT 1');
-})->everyMinute()->name('db-keepalive')->withoutOverlapping();
+    try {
+        DB::select('SELECT 1');
+    } catch (\Exception $e) {
+        // Si falla, lo intenta en el siguiente minuto
+    }
+})->everyMinute();
