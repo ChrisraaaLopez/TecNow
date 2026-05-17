@@ -19,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Auto-crear el symlink de storage si no existe (necesario en Laravel Cloud)
+        $link   = public_path('storage');
+        $target = storage_path('app/public');
+        if (!file_exists($link) && is_dir($target)) {
+            \Illuminate\Support\Facades\Artisan::call('storage:link');
+        }
     }
 }

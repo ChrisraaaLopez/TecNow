@@ -46,8 +46,8 @@ class PostVoteController extends Controller
 
         $karma = PostVote::where('post_id', $post->id)->sum('vote');
 
-        // Notificar al autor en hitos de karma (5, 10, 25, 50...)
-        if ($post->user_id !== Auth::id() && in_array($karma, [5, 10, 25, 50, 100])) {
+        // Notificar al autor cuando recibe un upvote (no notificar al quitarlo)
+        if ($post->user_id !== Auth::id() && $value === 1 && !$existing) {
             $post->user->notify(new NuevoVotoNotification($post, $karma));
         }
         $userVote = PostVote::where('user_id', Auth::id())

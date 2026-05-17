@@ -467,6 +467,34 @@
 
                                 </div>
 
+                              {{-- Reportar comentario (solo si no eres el autor) --}}
+                              @if($comment->user_id !== Auth::id())
+                              <div x-data="{ showReportComment: false }" class="relative">
+                                  <button @click="showReportComment = !showReportComment" type="button"
+                                          class="text-xs text-gray-400 hover:text-red-500 transition-colors">
+                                      Reportar
+                                  </button>
+                                  <div x-show="showReportComment" x-cloak
+                                       class="absolute left-0 top-6 z-50 w-64 p-3 bg-white border border-red-200 rounded-lg shadow-lg">
+                                      <form method="POST" action="{{ route('reportes.store') }}" class="flex flex-col gap-2">
+                                          @csrf
+                                          <input type="hidden" name="comment_id" value="{{ $comment->id }}">
+                                          <select name="motivo" required class="w-full px-2 py-1.5 rounded border border-gray-300 text-xs text-gray-900 bg-white">
+                                              <option value="">Motivo...</option>
+                                              <option value="spam">Spam</option>
+                                              <option value="contenido inapropiado">Contenido inapropiado</option>
+                                              <option value="acoso">Acoso</option>
+                                              <option value="otro">Otro</option>
+                                          </select>
+                                          <div class="flex gap-2 justify-end">
+                                              <button type="button" @click="showReportComment = false" class="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100">Cancelar</button>
+                                              <button type="submit" class="text-xs px-2 py-1 rounded text-white bg-red-500 hover:bg-red-600">Enviar</button>
+                                          </div>
+                                      </form>
+                                  </div>
+                              </div>
+                              @endif
+
                               {{-- Eliminar comentario --}}
                               @if($comment->user_id === Auth::id() || Auth::user()->global_role === 'admin')
                                   <form action="{{ route('comments.destroy', $comment) }}" method="POST">
