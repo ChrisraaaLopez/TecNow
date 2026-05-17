@@ -234,7 +234,7 @@
                                 if (window.Echo) {
                                     window.Echo.channel('posts.{{ $post->id }}')
                                         .listen('.PostVoted', (e) => { this.karma = e.karma; })
-                                        .listen('.CommentAdded', (e) => { this.commentCount = e.comment_count; });
+                                        .listen('.CommentAdded', (e) => { this.commentCount = e.commentCount; });
                                 }
                             },
                             async vote(value) {
