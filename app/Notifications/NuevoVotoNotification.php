@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Post;
 use App\Models\User;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 class NuevoVotoNotification extends Notification
@@ -28,9 +29,18 @@ class NuevoVotoNotification extends Notification
         ];
     }
 
-    // Necesario para que los broadcasts tengan los mismos datos que la base de datos
     public function toArray(object $notifiable): array
     {
         return $this->toDatabase($notifiable);
+    }
+
+    /**
+     * Broadcast sincrónico (onConnection sync) — evita depender del queue worker.
+     * Sin esto la notificación se encola y nunca aparece en tiempo real si no hay worker.
+     */
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return (new BroadcastMessage($this->toDatabase($notifiable)))
+            ->onConnection('sync');
     }
 }

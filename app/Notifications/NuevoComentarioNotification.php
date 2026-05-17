@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Comment;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 class NuevoComentarioNotification extends Notification
@@ -23,9 +24,17 @@ class NuevoComentarioNotification extends Notification
         ];
     }
 
-    // Necesario para que los broadcasts tengan los mismos datos que la base de datos
     public function toArray(object $notifiable): array
     {
         return $this->toDatabase($notifiable);
+    }
+
+    /**
+     * Broadcast sincrónico — evita depender del queue worker.
+     */
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return (new BroadcastMessage($this->toDatabase($notifiable)))
+            ->onConnection('sync');
     }
 }
