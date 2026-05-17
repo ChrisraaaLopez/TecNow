@@ -28,8 +28,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
                 return response('<html><body style="font-family:sans-serif;text-align:center;padding:80px;background:#0f172a;color:#fff">
                     <h2>⏳ Iniciando servidor...</h2>
-                    <p>La base de datos está despertando. <strong>Recarga la página en 5 segundos.</strong></p>
-                    <meta http-equiv="refresh" content="5">
+                    <p>La base de datos está despertando. <strong>Recargando automáticamente...</strong></p>
+                    <meta http-equiv="refresh" content="15">
                     </body></html>', 503);
             }
         });
