@@ -20,5 +20,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Manejar error de BD dormida (ProxySQL cold-start en Laravel Cloud)
+        $exceptions->renderable(function (\Illuminate\Database\QueryException $e, \Illuminate\Http\Request $request) {
+            if (str_contains($e->getMessage(), '9001') || str_contains($e->getMessage(), 'Max connect timeout')) {
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'Base de datos iniciando, por favor intenta de nuevo en unos segundos.'], 503);
+                }
+                return response('<html><body style="font-family:sans-serif;text-align:center;padding:80px;background:#0f172a;color:#fff">
+                    <h2>⏳ Iniciando servidor...</h2>
+                    <p>La base de datos está despertando. <strong>Recarga la página en 5 segundos.</strong></p>
+                    <meta http-equiv="refresh" content="5">
+                    </body></html>', 503);
+            }
+        });
     })->create();
