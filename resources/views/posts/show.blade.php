@@ -225,23 +225,12 @@
 
 
         {{-- Contenedor de Karma y Comentarios --}}
-        <div class="flex items-center gap-1 mt-2" x-data="{
+        <div class="flex items-center gap-1 mt-2"
+             x-data="{
                             karma: {{ $karma }},
                             userVote: {{ $userVote ?? 'null' }},
                             commentCount: {{ $post->comments->count() }},
                             loading: false,
-                            init() {
-                                const setupEcho = () => {
-                                    window.Echo.channel('posts.{{ $post->id }}')
-                                        .listen('.PostVoted', (e) => { this.karma = e.karma; })
-                                        .listen('.CommentAdded', (e) => { this.commentCount = e.commentCount; });
-                                };
-                                if (window.Echo) {
-                                    setupEcho();
-                                } else {
-                                    window.addEventListener('echo-ready', setupEcho, { once: true });
-                                }
-                            },
                             async vote(value) {
                                 if (this.loading) return;
                                 this.loading = true;
@@ -257,12 +246,13 @@
                                     const data = await res.json();
                                     this.karma = data.karma;
                                     this.userVote = data.user_vote;
-
                                 } finally {
                                     this.loading = false;
                                 }
                             }
-                        }">
+                        }"
+             @post-voted-{{ $post->id }}.window="karma = $event.detail.karma"
+             @comment-added-{{ $post->id }}.window="commentCount = $event.detail.commentCount">
             <div class="flex items-center bg-gray-100 rounded-lg">
                 {{-- Upvote --}}
                 <button type="button" @click="vote(1)" :disabled="loading"
@@ -773,4 +763,23 @@
   </div>
 </div>
 
+<script>
+(function() {
+    const postId = {{ $post->id }};
+    function setupEchoListeners() {
+        window.Echo.channel('posts.' + postId)
+            .listen('.PostVoted', function(e) {
+                window.dispatchEvent(new CustomEvent('post-voted-' + postId, { detail: e }));
+            })
+            .listen('.CommentAdded', function(e) {
+                window.dispatchEvent(new CustomEvent('comment-added-' + postId, { detail: e }));
+            });
+    }
+    if (window.Echo) {
+        setupEchoListeners();
+    } else {
+        window.addEventListener('echo-ready', setupEchoListeners, { once: true });
+    }
+})();
+</script>
 @endsection
