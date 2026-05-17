@@ -334,9 +334,7 @@
                 .listen('.PostVoted', function(e) { window.RealtimeUtils.updateVote(postId, e.karma); })
                 .listen('.CommentAdded', function(e) { window.RealtimeUtils.updateCommentCount(postId, e.commentCount); });
         });
-        window.Echo.channel('feed').listen('.NewPost', function(e) {
-            window.RealtimeUtils.showNewContentBanner('Nueva publicación de ' + e.authorName);
-        });
+        // Las vistas de comunidades ordenan por score, no se inyectan nuevos posts aquí
     }
     if (window.Echo) { setup(); }
     else { window.addEventListener('echo-ready', setup, { once: true }); }

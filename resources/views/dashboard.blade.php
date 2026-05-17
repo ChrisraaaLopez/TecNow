@@ -95,7 +95,7 @@
     </div>
 
     {{-- Posts --}}
-    <div class="space-y-4">
+    <div class="space-y-4" id="posts-feed">
       @forelse($posts as $post)
       <div class="bg-card border border-border rounded-lg p-6" x-data="{ showReport: false }">
         <div class="flex items-center justify-between mb-4">
@@ -459,16 +459,42 @@
 <script>
 (function() {
     const postIds = @json($posts->pluck('id'));
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
     function setup() {
+        // Suscribir a los posts actuales para votos y comentarios
         postIds.forEach(function(postId) {
             window.Echo.channel('posts.' + postId)
-                .listen('.PostVoted', function(e) { window.RealtimeUtils.updateVote(postId, e.karma); })
-                .listen('.CommentAdded', function(e) { window.RealtimeUtils.updateCommentCount(postId, e.commentCount); });
+                .listen('.PostVoted', function(e) {
+                    window.RealtimeUtils.updateVote(postId, e.karma);
+                })
+                .listen('.CommentAdded', function(e) {
+                    window.RealtimeUtils.updateCommentCount(postId, e.commentCount);
+                });
         });
+
+        // Escuchar nuevas publicaciones y mostrarlas automáticamente
         window.Echo.channel('feed').listen('.NewPost', function(e) {
-            window.RealtimeUtils.showNewContentBanner('Nueva publicación de ' + e.authorName);
+            fetch('/posts/' + e.postId + '/card', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(res) { return res.ok ? res.text() : null; })
+            .then(function(html) {
+                if (!html) return;
+                window.RealtimeUtils.prependPost(html);
+                // Suscribir al canal del nuevo post
+                window.Echo.channel('posts.' + e.postId)
+                    .listen('.PostVoted', function(ev) {
+                        window.RealtimeUtils.updateVote(e.postId, ev.karma);
+                    })
+                    .listen('.CommentAdded', function(ev) {
+                        window.RealtimeUtils.updateCommentCount(e.postId, ev.commentCount);
+                    });
+            })
+            .catch(function() {});
         });
     }
+
     if (window.Echo) { setup(); }
     else { window.addEventListener('echo-ready', setup, { once: true }); }
 })();

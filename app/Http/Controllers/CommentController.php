@@ -25,9 +25,14 @@ class CommentController extends Controller
             'content'   => $validated['content'],
         ]);
 
-        // Broadcast en tiempo real el nuevo conteo de comentarios
+        // Broadcast en tiempo real el nuevo conteo y el ID del comentario
         try {
-            CommentAddedEvent::dispatch($post->id, $post->comments()->count());
+            CommentAddedEvent::dispatch(
+                $post->id,
+                $post->comments()->count(),
+                $comment->id,
+                $comment->parent_id
+            );
         } catch (\Exception $e) {
             // Si Reverb no está disponible, el comentario igual se guarda
         }
@@ -50,6 +55,14 @@ class CommentController extends Controller
         }
 
         return back();
+    }
+
+    public function card(Comment $comment)
+    {
+        $comment->load(['user', 'votes']);
+        $karma    = $comment->votes->sum('vote');
+        $userVote = $comment->votes->where('user_id', Auth::id())->first()?->vote;
+        return view('comments._card', compact('comment', 'karma', 'userVote'));
     }
 
     public function destroy(Comment $comment)

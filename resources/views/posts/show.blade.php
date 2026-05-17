@@ -354,7 +354,7 @@
           </form>
 
           {{-- Lista de comentarios --}}
-          <div class="space-y-4">
+          <div class="space-y-4" id="comments-list">
               @forelse($comments as $comment)
                   @php
                       $commentKarma    = $comment->votes->sum('vote');
@@ -765,28 +765,45 @@
 <script>
 (function() {
     const postId = {{ $post->id }};
-    function updateAlpine(karma, commentCount) {
+
+    function updateVoteBar(karma) {
         const el = document.getElementById('vote-bar-' + postId);
         if (!el || !window.Alpine || !window.Alpine.$data) return;
-        const data = window.Alpine.$data(el);
-        if (karma !== null) data.karma = karma;
-        if (commentCount !== null) data.commentCount = commentCount;
+        window.Alpine.$data(el).karma = karma;
     }
+
+    function updateCommentCount(count) {
+        const el = document.getElementById('comment-count-' + postId);
+        if (el) el.textContent = count;
+    }
+
+    function appendNewComment(commentId) {
+        fetch('/comments/' + commentId + '/card', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(res) { return res.ok ? res.text() : null; })
+        .then(function(html) {
+            if (html) window.RealtimeUtils.prependComment(html);
+        })
+        .catch(function() {});
+    }
+
     function setupEchoListeners() {
         window.Echo.channel('posts.' + postId)
-            .listen('.PostVoted', function(e) { updateAlpine(e.karma, null); })
+            .listen('.PostVoted', function(e) {
+                updateVoteBar(e.karma);
+            })
             .listen('.CommentAdded', function(e) {
-                updateAlpine(null, e.commentCount);
-                // Mostrar banner si el comentario no es del usuario actual
-                const myId = document.querySelector('meta[name="user-id"]')?.content;
-                window.RealtimeUtils.showNewContentBanner('Nuevo comentario en esta publicación');
+                updateCommentCount(e.commentCount);
+                // Solo inyectar comentarios de primer nivel (sin parent_id)
+                if (e.commentId && !e.parentId) {
+                    appendNewComment(e.commentId);
+                }
             });
     }
-    if (window.Echo) {
-        setupEchoListeners();
-    } else {
-        window.addEventListener('echo-ready', setupEchoListeners, { once: true });
-    }
+
+    if (window.Echo) { setupEchoListeners(); }
+    else { window.addEventListener('echo-ready', setupEchoListeners, { once: true }); }
 })();
 </script>
 @endsection

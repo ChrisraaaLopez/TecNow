@@ -30,10 +30,7 @@ window.Echo = new Echo({
     },
 });
 
-// Notificar a Alpine.js que Echo está listo
-window.dispatchEvent(new Event('echo-ready'));
-
-// Utilidad global para tiempo real
+// Utilidad global para tiempo real — DEBE estar antes de echo-ready
 window.RealtimeUtils = {
     updateVote: function(postId, karma) {
         const el = document.getElementById('vote-bar-' + postId);
@@ -43,16 +40,30 @@ window.RealtimeUtils = {
         const el = document.getElementById('comment-count-' + postId);
         if (el) el.textContent = count;
     },
-    showNewContentBanner: function(message) {
-        let banner = document.getElementById('new-content-banner');
-        if (!banner) {
-            banner = document.createElement('div');
-            banner.id = 'new-content-banner';
-            banner.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#2563eb;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
-            banner.onclick = function() { window.location.reload(); };
-            document.body.appendChild(banner);
-        }
-        banner.textContent = message + ' — Click para actualizar';
-        banner.style.display = 'block';
+    prependPost: function(html) {
+        const feed = document.getElementById('posts-feed');
+        if (!feed) return;
+        const wrap = document.createElement('div');
+        wrap.innerHTML = html.trim();
+        const card = wrap.firstElementChild;
+        if (!card) return;
+        feed.insertBefore(card, feed.firstChild);
+        // Alpine v3 detecta nuevos nodos x-data automáticamente via MutationObserver
+    },
+    prependComment: function(html) {
+        const list = document.getElementById('comments-list');
+        if (!list) return;
+        const wrap = document.createElement('div');
+        wrap.innerHTML = html.trim();
+        const card = wrap.firstElementChild;
+        if (!card) return;
+        // Insertar comentario al inicio + separador debajo
+        const sep = document.createElement('div');
+        sep.className = 'border-t border-border';
+        list.insertBefore(sep, list.firstChild);
+        list.insertBefore(card, list.firstChild);
     }
 };
+
+// Notificar que Echo está listo (DESPUÉS de definir RealtimeUtils)
+window.dispatchEvent(new Event('echo-ready'));

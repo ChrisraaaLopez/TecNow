@@ -305,10 +305,8 @@
     function setup() {
         postIds.forEach(function(postId) {
             window.Echo.channel('posts.' + postId)
-                .listen('.PostVoted', function(e) { window.RealtimeUtils.updateVote(postId, e.karma); });
-        });
-        window.Echo.channel('feed').listen('.NewPost', function(e) {
-            window.RealtimeUtils.showNewContentBanner('Nueva publicación de ' + e.authorName);
+                .listen('.PostVoted', function(e) { window.RealtimeUtils.updateVote(postId, e.karma); })
+                .listen('.CommentAdded', function(e) { window.RealtimeUtils.updateCommentCount(postId, e.commentCount); });
         });
     }
     if (window.Echo) { setup(); }

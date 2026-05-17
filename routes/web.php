@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
     Route::get('/posts/{post}/edit', [PostController::class, 'edit'])->name('posts.edit');
     Route::put('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
+    Route::get('/posts/{post}/card', [PostController::class, 'card'])->name('posts.card');
     Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
     Route::get('/popular', [PostController::class, 'popular'])->name('popular');
     Route::get('/trending', [PostController::class, 'trending'])->name('trending');
@@ -62,6 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store')->middleware('noSuspendido');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/{comment}/vote', [CommentVoteController::class, 'vote'])->name('comments.vote');
+    Route::get('/comments/{comment}/card', [CommentController::class, 'card'])->name('comments.card');
 
     // Reportes
     Route::post('/reportes', [ReporteController::class, 'store'])->name('reportes.store')->middleware('noSuspendido');

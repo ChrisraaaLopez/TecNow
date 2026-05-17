@@ -13,8 +13,10 @@ class CommentAddedEvent implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public int $postId,
-        public int $commentCount
+        public int  $postId,
+        public int  $commentCount,
+        public int  $commentId = 0,
+        public ?int $parentId  = null
     ) {}
 
     public function broadcastOn(): Channel

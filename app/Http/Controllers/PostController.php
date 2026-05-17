@@ -137,7 +137,16 @@ class PostController extends Controller
 
         $post->delete();
 
-        return back()->with('success', 'Publicación eliminada.');
+        // Redirigir al dashboard (back() llevaría al post eliminado → 404)
+        return redirect()->route('dashboard')->with('success', 'Publicación eliminada.');
+    }
+
+    public function card(Post $post)
+    {
+        $post->load(['user', 'communities', 'votes']);
+        $karma    = $post->votes->sum('vote');
+        $userVote = $post->votes->where('user_id', Auth::id())->first()?->vote;
+        return view('posts._card', compact('post', 'karma', 'userVote'));
     }
 
     public function show(Post $post)
