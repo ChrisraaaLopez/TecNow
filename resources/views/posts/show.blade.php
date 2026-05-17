@@ -216,12 +216,27 @@
       <h1 class="text-xl font-bold mb-3">{{ $post->title }}</h1>
       <p class="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{{ $post->content }}</p>
 
+      {{-- Imagen del post --}}
+      @if($post->image)
+      <div class="mt-4 rounded-lg overflow-hidden border border-border">
+        <img src="{{ Storage::url($post->image) }}" alt="" class="w-full max-h-96 object-cover" />
+      </div>
+      @endif
+
 
         {{-- Contenedor de Karma y Comentarios --}}
         <div class="flex items-center gap-1 mt-2" x-data="{
                             karma: {{ $karma }},
                             userVote: {{ $userVote ?? 'null' }},
+                            commentCount: {{ $post->comments->count() }},
                             loading: false,
+                            init() {
+                                if (window.Echo) {
+                                    window.Echo.channel('posts.{{ $post->id }}')
+                                        .listen('.PostVoted', (e) => { this.karma = e.karma; })
+                                        .listen('.CommentAdded', (e) => { this.commentCount = e.comment_count; });
+                                }
+                            },
                             async vote(value) {
                                 if (this.loading) return;
                                 this.loading = true;
@@ -298,7 +313,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <span class="text-sm">{{ $post->comments->count() }}</span>
+                    <span class="text-sm" x-text="commentCount"></span>
                 </a>
             </div>
 

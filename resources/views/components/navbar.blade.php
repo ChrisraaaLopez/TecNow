@@ -376,6 +376,27 @@ function notificacionesPanel() {
     notifs: [],
     sinLeer: {{ Auth::user()->unreadNotifications->count() }},
 
+    init() {
+      // Escuchar notificaciones en tiempo real via Reverb
+      const userId = document.querySelector('meta[name="user-id"]')?.content;
+      if (userId && window.Echo) {
+        window.Echo.private(`App.Models.User.${userId}`)
+          .notification((notification) => {
+            this.sinLeer++;
+            // Agregar al inicio de la lista si el panel está abierto
+            if (this.open) {
+              this.notifs.unshift({
+                id: notification.id,
+                type: notification.type,
+                data: notification,
+                read_at: null,
+                created_at: new Date().toISOString(),
+              });
+            }
+          });
+      }
+    },
+
     async cargar() {
       this.cargando = true;
       try {

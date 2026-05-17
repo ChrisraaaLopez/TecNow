@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\CommentAddedEvent;
 use App\Models\Post;
 use App\Models\Comment;
 use App\Notifications\NuevoComentarioNotification;
@@ -23,6 +24,9 @@ class CommentController extends Controller
             'parent_id' => $validated['parent_id'] ?? null,
             'content'   => $validated['content'],
         ]);
+
+        // Broadcast en tiempo real el nuevo conteo de comentarios
+        CommentAddedEvent::dispatch($post->id, $post->comments()->count());
 
         // Notificar al autor del post (si no es el mismo que comenta)
         if ($post->user_id !== Auth::id()) {
