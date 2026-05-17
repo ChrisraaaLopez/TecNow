@@ -86,10 +86,8 @@
     <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
       <div class="flex gap-2">
         @foreach (['popular' => 'Popular', 'reciente' => 'Reciente', 'trending' => 'Trending'] as $key => $label)
-        <button @click="filter = '{{ $key }}'"
-          :class="filter === '{{ $key }}' ? 'bg-blue-700 text-white' :
-                                'bg-card hover:bg-muted text-foreground border border-border'"
-          class="px-4 py-2 rounded-lg transition-colors text-sm">
+        <a href="{{ route('dashboard', ['sort' => $key]) }}"
+          class="px-4 py-2 rounded-lg transition-colors text-sm {{ $sort === $key ? 'bg-blue-700 text-white' : 'bg-card hover:bg-muted text-foreground border border-border' }}">
           {{ $label }}
         </a>
         @endforeach
