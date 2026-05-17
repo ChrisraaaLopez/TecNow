@@ -13,8 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'esAdmin' => \App\Http\Middleware\EsAdmin::class,
-            'is_admin' => \App\Http\Middleware\IsAdmin::class,
+            'esAdmin'      => \App\Http\Middleware\EsAdmin::class,
+            'is_admin'     => \App\Http\Middleware\IsAdmin::class,
+            'noSuspendido' => \App\Http\Middleware\CheckSuspendido::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
