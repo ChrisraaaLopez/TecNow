@@ -225,7 +225,7 @@
 
 
         {{-- Contenedor de Karma y Comentarios --}}
-        <div class="flex items-center gap-1 mt-2"
+        <div id="vote-bar-{{ $post->id }}" class="flex items-center gap-1 mt-2"
              x-data="{
                             karma: {{ $karma }},
                             userVote: {{ $userVote ?? 'null' }},
@@ -251,7 +251,7 @@
                                 }
                             }
                         }"
-             @reverb-update.window="if($event.detail.postId=={{ $post->id }} && $event.detail.type==='vote') karma=$event.detail.value; if($event.detail.postId=={{ $post->id }} && $event.detail.type==='comment') commentCount=$event.detail.value;">
+            >
             <div class="flex items-center bg-gray-100 rounded-lg">
                 {{-- Upvote --}}
                 <button type="button" @click="vote(1)" :disabled="loading"
@@ -765,14 +765,20 @@
 <script>
 (function() {
     const postId = {{ $post->id }};
+    function updateAlpine(karma, commentCount) {
+        const el = document.getElementById('vote-bar-' + postId);
+        if (!el) return;
+        // Actualizar directamente via Alpine.$data
+        if (window.Alpine && window.Alpine.$data) {
+            const data = window.Alpine.$data(el);
+            if (karma !== null) data.karma = karma;
+            if (commentCount !== null) data.commentCount = commentCount;
+        }
+    }
     function setupEchoListeners() {
         window.Echo.channel('posts.' + postId)
-            .listen('.PostVoted', function(e) {
-                window.dispatchEvent(new CustomEvent('reverb-update', { detail: { postId: postId, type: 'vote', value: e.karma } }));
-            })
-            .listen('.CommentAdded', function(e) {
-                window.dispatchEvent(new CustomEvent('reverb-update', { detail: { postId: postId, type: 'comment', value: e.commentCount } }));
-            });
+            .listen('.PostVoted', function(e) { updateAlpine(e.karma, null); })
+            .listen('.CommentAdded', function(e) { updateAlpine(null, e.commentCount); });
     }
     if (window.Echo) {
         setupEchoListeners();
