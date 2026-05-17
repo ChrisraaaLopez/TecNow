@@ -46,36 +46,32 @@
         </button>
       </div>
       <div class="space-y-1">
-        @foreach ($communities as $community)
-        <button
-          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors text-left">
-          <span class="text-lg">{{ $community->icon }}</span>
+        @php $avisosPop = $communities->where('tipo', 'avisos')->first(); @endphp
+        @if($avisosPop)
+        <a href="{{ route('communities.show', $avisosPop) }}"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+          <x-community-icon :community="$avisosPop" size="sm" />
           <div class="flex-1 min-w-0">
-            <p class="text-sm truncate">{{ $community->name }}</p>
-            <p class="text-xs text-muted-foreground">{{ $community->users_count }} miembros</p>
+            <p class="text-sm truncate font-medium text-blue-600">{{ $avisosPop->name }}</p>
+            <p class="text-xs text-muted-foreground">{{ $avisosPop->users_count }} miembros</p>
           </div>
-          @php
-          $isForumAdmin = $community
-          ->users()
-          ->where('user_id', Auth::id())
-          ->wherePivot('role', 'admin')
-          ->exists();
-          $isGlobalAdmin = Auth::user()->global_role === 'admin';
-          @endphp
-          @if ($isForumAdmin || $isGlobalAdmin)
-          <button type="button"
-            @click.prevent="selectedCommunityId = {{ $community->id }}; showAddAdminModal = true"
-            class="text-xs text-primary hover:text-blue-400 p-1 bg-gray-800 rounded z-10 relative">
-            +Admin
-          </button>
-          @endif
-        </button>
+        </a>
+        @endif
+        @foreach ($communities->where('tipo', 'carrera') as $c)
+        <a href="{{ route('communities.show', $c) }}"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+          <x-community-icon :community="$c" size="sm" />
+          <div class="flex-1 min-w-0">
+            <p class="text-sm truncate">{{ $c->name }}</p>
+            <p class="text-xs text-muted-foreground">{{ $c->users_count }} miembros</p>
+          </div>
+        </a>
         @endforeach
       </div>
-      <button
-        class="w-full mt-3 px-3 py-2 text-sm text-primary hover:bg-sidebar-accent rounded-lg transition-colors">
+      <a href="{{ route('dashboard') }}"
+        class="block w-full mt-3 px-3 py-2 text-sm text-primary hover:bg-sidebar-accent rounded-lg transition-colors text-center">
         Ver todas las comunidades
-      </button>
+      </a>
       @if (Auth::user()->global_role === 'admin')
       <button @click="showCommunityModal = true"
         class="w-full mt-3 px-3 py-2 text-sm bg-primary text-white hover:bg-blue-700 rounded-lg transition-colors">
@@ -300,7 +296,7 @@
       <div class="border-t border-border pt-4">
         <h4 class="text-sm mb-2">Estadísticas</h4>
         <div class="space-y-2 text-sm">
-          @foreach ([['Miembros activos', '2,450'], ['Publicaciones hoy', '127'], ['Comunidades', '24']] as [$label, $val])
+          @foreach ([['Miembros activos', number_format($stats['miembros'])], ['Publicaciones hoy', number_format($stats['publicaciones'])], ['Comunidades', number_format($stats['comunidades'])]] as [$label, $val])
           <div class="flex justify-between">
             <span class="text-muted-foreground">{{ $label }}</span>
             <span class="font-medium text-primary">{{ $val }}</span>

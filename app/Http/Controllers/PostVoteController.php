@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Notifications\NuevoVotoNotification;
 use Illuminate\Http\Request;
 use App\Models\Post;
 use App\Models\PostVote;
@@ -43,8 +44,12 @@ class PostVoteController extends Controller
         $post->refresh();
         $post->updateHotScore();
 
-        // Karma actualizado
         $karma = PostVote::where('post_id', $post->id)->sum('vote');
+
+        // Notificar al autor en hitos de karma (5, 10, 25, 50...)
+        if ($post->user_id !== Auth::id() && in_array($karma, [5, 10, 25, 50, 100])) {
+            $post->user->notify(new NuevoVotoNotification($post, $karma));
+        }
         $userVote = PostVote::where('user_id', Auth::id())
             ->where('post_id', $post->id)
             ->value('vote');

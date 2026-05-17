@@ -16,18 +16,46 @@ Route::get('/', function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
+    Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
         $communities = \App\Models\Community::withCount('users')->get();
         $posts = \App\Models\Post::with(['user', 'communities', 'votes', 'comments'])->latest()->get();
 
-        return view('dashboard', compact('communities', 'posts'));
+        $sort  = $request->query('sort', 'reciente');
+        $query = $request->query('q', '');
+
+        $postsQuery = \App\Models\Post::with(['user', 'communities', 'votes', 'comments', 'sharedFrom.user']);
+
+        if ($query) {
+            $postsQuery->where(function ($q) use ($query) {
+                $q->where('title', 'like', "%{$query}%")
+                  ->orWhere('content', 'like', "%{$query}%");
+            });
+        }
+
+        if ($sort === 'popular') {
+            $postsQuery->orderByDesc('hot_score');
+        } elseif ($sort === 'trending') {
+            $postsQuery->where('created_at', '>=', now()->subHours(48))->orderByDesc('hot_score');
+        } else {
+            $postsQuery->latest();
+        }
+
+        $posts = $postsQuery->get();
+
+        $stats = [
+            'miembros'     => \App\Models\User::where('activo', true)->count(),
+            'publicaciones' => \App\Models\Post::whereDate('created_at', today())->count(),
+            'comunidades'  => \App\Models\Community::count(),
+        ];
+
+        return view('dashboard', compact('communities', 'posts', 'sort', 'query', 'stats'));
     })->name('dashboard');
 
     // Rutas para perfiles
     Route::get('/perfil', function () {
         $user = Auth::user();
         $posts = $user->posts()
-            ->with('votes')
+            ->with(['votes', 'communities', 'comments', 'sharedFrom.user'])
             ->latest()
             ->get();
 
@@ -48,9 +76,12 @@ Route::middleware('auth')->group(function () {
 
     // Communities and Posts
     Route::post('/communities', [CommunityController::class, 'store'])->name('communities.store');
+    Route::get('/communities/{community:slug}', [CommunityController::class, 'show'])->name('communities.show');
+    Route::post('/communities/{community:slug}/join', [CommunityController::class, 'join'])->name('communities.join');
+    Route::post('/communities/{community:slug}/leave', [CommunityController::class, 'leave'])->name('communities.leave');
     Route::post('/communities/{community}/add-admin', [CommunityController::class, 'addAdmin'])->name('communities.addAdmin');
 
-    Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
+    Route::post('/posts', [PostController::class, 'store'])->name('posts.store')->middleware('noSuspendido');
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
 
     Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create')->middleware('auth');
@@ -62,9 +93,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/trending', [PostController::class, 'trending'])->name('trending');
 
     Route::post('/posts/{post}/vote', [PostVoteController::class, 'vote'])->name('posts.vote');
+    Route::post('/posts/{post}/share', [\App\Http\Controllers\ShareController::class, 'store'])->name('posts.share')->middleware('noSuspendido');
 
     // Notificaciones
+    Route::get('/buscar/sugerencias', [\App\Http\Controllers\SearchController::class, 'suggestions'])->name('search.suggestions');
+
     Route::get('/notificaciones', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notificaciones/json', [App\Http\Controllers\NotificationController::class, 'json'])->name('notifications.json');
     Route::post('/notificaciones/{id}/leer', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notificaciones/leer-todas', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
 

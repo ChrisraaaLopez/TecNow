@@ -18,8 +18,10 @@ class Post extends Model
     'user_id',
     'title',
     'content',
+    'image',
     'hot_score',
     'fijada',
+    'shared_from_post_id',
   ];
 
   protected $casts = [
@@ -29,6 +31,18 @@ class Post extends Model
   public function communities(): BelongsToMany
   {
     return $this->belongsToMany(Community::class);
+  }
+
+  /** El post original del que fue compartido (si aplica) */
+  public function sharedFrom(): BelongsTo
+  {
+    return $this->belongsTo(Post::class, 'shared_from_post_id');
+  }
+
+  /** Posts que comparten este */
+  public function shares(): HasMany
+  {
+    return $this->hasMany(Post::class, 'shared_from_post_id');
   }
 
   public function user(): BelongsTo
