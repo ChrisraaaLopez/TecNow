@@ -48,11 +48,19 @@ class PostVoteController extends Controller
         $karma = PostVote::where('post_id', $post->id)->sum('vote');
 
         // Broadcast en tiempo real el nuevo karma
-        PostVotedEvent::dispatch($post->id, $karma);
+        try {
+            PostVotedEvent::dispatch($post->id, $karma);
+        } catch (\Exception $e) {
+            // Si Reverb no está disponible, el voto igual se guarda
+        }
 
         // Notificar al autor cuando recibe un upvote nuevo
-        if ($post->user_id !== Auth::id() && $value === 1 && !$existing) {
-            $post->user->notify(new NuevoVotoNotification($post, $karma, Auth::user()));
+        try {
+            if ($post->user_id !== Auth::id() && $value === 1 && !$existing) {
+                $post->user->notify(new NuevoVotoNotification($post, $karma, Auth::user()));
+            }
+        } catch (\Exception $e) {
+            // Si la notificación falla, el voto igual se guarda
         }
         $userVote = PostVote::where('user_id', Auth::id())
             ->where('post_id', $post->id)

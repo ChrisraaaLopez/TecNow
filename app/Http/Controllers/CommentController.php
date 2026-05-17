@@ -26,19 +26,27 @@ class CommentController extends Controller
         ]);
 
         // Broadcast en tiempo real el nuevo conteo de comentarios
-        CommentAddedEvent::dispatch($post->id, $post->comments()->count());
-
-        // Notificar al autor del post (si no es el mismo que comenta)
-        if ($post->user_id !== Auth::id()) {
-            $post->user->notify(new NuevoComentarioNotification($comment));
+        try {
+            CommentAddedEvent::dispatch($post->id, $post->comments()->count());
+        } catch (\Exception $e) {
+            // Si Reverb no está disponible, el comentario igual se guarda
         }
 
-        // Si es una respuesta, notificar también al autor del comentario padre
-        if (!empty($validated['parent_id'])) {
-            $parentComment = Comment::find($validated['parent_id']);
-            if ($parentComment && $parentComment->user_id !== Auth::id() && $parentComment->user_id !== $post->user_id) {
-                $parentComment->user->notify(new NuevoComentarioNotification($comment));
+        // Notificar al autor del post (si no es el mismo que comenta)
+        try {
+            if ($post->user_id !== Auth::id()) {
+                $post->user->notify(new NuevoComentarioNotification($comment));
             }
+
+            // Si es una respuesta, notificar también al autor del comentario padre
+            if (!empty($validated['parent_id'])) {
+                $parentComment = Comment::find($validated['parent_id']);
+                if ($parentComment && $parentComment->user_id !== Auth::id() && $parentComment->user_id !== $post->user_id) {
+                    $parentComment->user->notify(new NuevoComentarioNotification($comment));
+                }
+            }
+        } catch (\Exception $e) {
+            // Si la notificación falla, el comentario igual se guarda
         }
 
         return back();
