@@ -17,9 +17,9 @@ window.Pusher = Pusher;
 window.Echo = new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: window.location.hostname,
-    wsPort: window.location.protocol === 'https:' ? 443 : (import.meta.env.VITE_REVERB_PORT ?? 9000),
+    wsHost: import.meta.env.VITE_REVERB_HOST,
+    wsPort: import.meta.env.VITE_REVERB_PORT ?? 443,
     wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    forceTLS: window.location.protocol === 'https:',
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
 });
