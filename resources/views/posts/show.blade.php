@@ -767,23 +767,28 @@
     const postId = {{ $post->id }};
     function updateAlpine(karma, commentCount) {
         const el = document.getElementById('vote-bar-' + postId);
-        if (!el) return;
-        // Actualizar directamente via Alpine.$data
+        if (!el) { console.warn('[Reverb] Elemento no encontrado: vote-bar-' + postId); return; }
         if (window.Alpine && window.Alpine.$data) {
             const data = window.Alpine.$data(el);
-            if (karma !== null) data.karma = karma;
-            if (commentCount !== null) data.commentCount = commentCount;
-        }
+            if (karma !== null) { data.karma = karma; console.log('[Reverb] karma actualizado:', karma); }
+            if (commentCount !== null) { data.commentCount = commentCount; console.log('[Reverb] commentCount actualizado:', commentCount); }
+        } else { console.warn('[Reverb] Alpine.$data no disponible'); }
     }
     function setupEchoListeners() {
+        console.log('[Reverb] Suscribiendo canal posts.' + postId);
         window.Echo.channel('posts.' + postId)
-            .listen('.PostVoted', function(e) { updateAlpine(e.karma, null); })
-            .listen('.CommentAdded', function(e) { updateAlpine(null, e.commentCount); });
+            .listen('.PostVoted', function(e) { console.log('[Reverb] PostVoted:', e); updateAlpine(e.karma, null); })
+            .listen('.CommentAdded', function(e) { console.log('[Reverb] CommentAdded:', e); updateAlpine(null, e.commentCount); });
     }
     if (window.Echo) {
+        console.log('[Reverb] Echo ya listo, configurando...');
         setupEchoListeners();
     } else {
-        window.addEventListener('echo-ready', setupEchoListeners, { once: true });
+        console.log('[Reverb] Esperando echo-ready...');
+        window.addEventListener('echo-ready', function() {
+            console.log('[Reverb] echo-ready recibido!');
+            setupEchoListeners();
+        }, { once: true });
     }
 })();
 </script>
