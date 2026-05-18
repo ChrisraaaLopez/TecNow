@@ -217,17 +217,53 @@
 
         {{-- Imágenes del Post --}}
         @php $imageUrls = $post->image_urls; @endphp
-        @if(count($imageUrls) > 0)
+        @if(count($imageUrls) === 1)
           <div class="mt-4 rounded-lg overflow-hidden border border-border">
-            @if(count($imageUrls) === 1)
-              <img src="{{ $imageUrls[0] }}" alt="" class="w-full max-h-96 object-cover" />
-            @else
-              <div class="grid grid-cols-2 gap-0.5">
-                @foreach($imageUrls as $url)
-                  <img src="{{ $url }}" alt="" class="w-full h-48 object-cover" />
-                @endforeach
-              </div>
-            @endif
+            <img src="{{ $imageUrls[0] }}" alt="" class="w-full max-h-96 object-cover" />
+          </div>
+        @elseif(count($imageUrls) > 1)
+          {{-- Carrusel --}}
+          <div class="mt-4 rounded-lg overflow-hidden border border-border relative"
+               x-data="{ current: 0, total: {{ count($imageUrls) }} }">
+
+            {{-- Imágenes --}}
+            @foreach($imageUrls as $i => $url)
+            <div x-show="current === {{ $i }}" x-cloak>
+              <img src="{{ $url }}" alt="Imagen {{ $i + 1 }}"
+                   class="w-full max-h-96 object-cover" />
+            </div>
+            @endforeach
+
+            {{-- Flecha anterior --}}
+            <button type="button"
+              @click="current = (current - 1 + total) % total"
+              class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white rounded-full p-2 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+
+            {{-- Flecha siguiente --}}
+            <button type="button"
+              @click="current = (current + 1) % total"
+              class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white rounded-full p-2 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+
+            {{-- Puntos indicadores --}}
+            <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+              @foreach($imageUrls as $i => $url)
+              <button type="button" @click="current = {{ $i }}"
+                :class="current === {{ $i }}
+                  ? 'bg-white w-2.5 h-2.5'
+                  : 'bg-white/50 hover:bg-white/80 w-2 h-2'"
+                class="rounded-full transition-all duration-200">
+              </button>
+              @endforeach
+            </div>
+
           </div>
         @endif
 
@@ -321,6 +357,22 @@
                     <span class="text-sm" x-text="commentCount"></span>
                 </a>
             </div>
+
+            {{-- Contador de imágenes --}}
+            @if(count($imageUrls) > 0)
+            <span class="text-gray-700 mx-1">·</span>
+            <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                <a href="#"
+                   class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors"
+                   @click.prevent="document.querySelector('[x-data*=current]')?.scrollIntoView({ behavior: 'smooth' })">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span class="text-sm">{{ count($imageUrls) }}</span>
+                </a>
+            </div>
+            @endif
 
             {{-- Botón compartir --}}
             <x-share-button :post="$post" />
