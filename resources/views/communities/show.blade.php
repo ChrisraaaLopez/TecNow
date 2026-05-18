@@ -195,11 +195,16 @@
         @if(count($imageUrls) > 0)
         <a href="{{ route('posts.show', $post) }}" class="block mb-4 rounded-lg overflow-hidden border border-border">
           @if(count($imageUrls) === 1)
-            <img src="{{ $imageUrls[0] }}" alt="" class="w-full max-h-64 object-cover hover:opacity-95 transition-opacity" />
+            {{-- Imagen única: fondo borroso + imagen contenida (igual que dashboard y show) --}}
+            <div class="relative w-full bg-black" style="height:256px">
+              <img src="{{ $imageUrls[0] }}" alt="" class="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-50 pointer-events-none select-none" />
+              <img src="{{ $imageUrls[0] }}" alt="" class="relative w-full h-full object-contain hover:opacity-95 transition-opacity z-10" />
+            </div>
           @else
+            {{-- Múltiples imágenes: grid 2x2 con overlay +N --}}
             <div class="grid grid-cols-2 gap-0.5">
               @foreach(array_slice($imageUrls, 0, 4) as $i => $url)
-                <div class="relative">
+                <div class="relative {{ count($imageUrls) === 3 && $i === 0 ? 'row-span-2' : '' }}">
                   <img src="{{ $url }}" alt="" class="w-full h-32 object-cover hover:opacity-95 transition-opacity" />
                   @if($i === 3 && count($imageUrls) > 4)
                     <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
