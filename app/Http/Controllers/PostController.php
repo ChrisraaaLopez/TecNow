@@ -65,12 +65,6 @@ class PostController extends Controller
             'content' => $validated['content'],
             'images'  => !empty($imagePaths) ? $imagePaths : null,
         ]);
-
-        // Broadcast nueva publicación en tiempo real
-        try {
-            NewPostBroadcastEvent::dispatch($post->id, Auth::user()->name, $post->title);
-        } catch (\Exception $e) {}
-
         if (!empty($validated['community_id'])) {
             $post->communities()->attach($validated['community_id']);
             return redirect()->route('communities.show', Community::find($validated['community_id']))
