@@ -30,11 +30,6 @@
     <div class="border-t border-sidebar-border pt-4">
       <div class="flex items-center justify-between mb-3 px-3">
         <p class="text-sm text-muted-foreground">Mis Comunidades</p>
-        <button class="text-primary hover:text-blue-400">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
       </div>
       {{-- Avisos primero --}}
       @php $avisosCommunity = $communities->where('tipo', 'avisos')->first(); @endphp
@@ -74,12 +69,6 @@
         class="w-full mt-3 px-3 py-2 text-sm text-primary hover:bg-sidebar-accent rounded-lg transition-colors block text-center">
         Explorar todas las comunidades →
       </a>
-      @if (Auth::user()->global_role === 'admin')
-      <button @click="showCommunityModal = true"
-        class="w-full mt-3 px-3 py-2 text-sm bg-primary text-white hover:bg-blue-700 rounded-lg transition-colors">
-        + Crear Comunidad
-      </button>
-      @endif
     </div>
   </aside>
 

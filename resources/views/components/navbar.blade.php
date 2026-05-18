@@ -531,27 +531,45 @@ function notificacionesPanel() {
 
     init() {
       const userId = document.querySelector('meta[name="user-id"]')?.content;
+      if (!userId) return;
+
+      // — Suscripción WebSocket al canal privado —
       const setupEcho = () => {
-        if (!userId) return;
-        window.Echo.private(`App.Models.User.${userId}`)
-          .notification((notification) => {
-            this.sinLeer++;
-            if (this.open) {
-              this.notifs.unshift({
-                id: notification.id,
-                type: notification.type,
-                data: notification,
-                read_at: null,
-                created_at: new Date().toISOString(),
-              });
-            }
-          });
+        if (!window.Echo) return;
+        try {
+          window.Echo.private(`App.Models.User.${userId}`)
+            .notification((notification) => {
+              this.sinLeer++;
+              if (this.open) {
+                this.notifs.unshift({
+                  id: notification.id,
+                  type: notification.type,
+                  data: notification,
+                  read_at: null,
+                  created_at: new Date().toISOString(),
+                });
+              }
+            });
+        } catch(e) { console.warn('[Echo]', e); }
       };
-      if (userId && window.Echo) {
-        setupEcho();
-      } else if (userId) {
-        window.addEventListener('echo-ready', setupEcho, { once: true });
-      }
+
+      if (window.Echo) { setupEcho(); }
+      else { window.addEventListener('echo-ready', setupEcho, { once: true }); }
+
+      // — Polling de respaldo cada 45 s (cubre fallos del WebSocket) —
+      const pollCount = () => {
+        if (this.open) return;
+        fetch('/notificaciones/json')
+          .then(r => r.json())
+          .then(d => { if (d.sinLeer > this.sinLeer) this.sinLeer = d.sinLeer; })
+          .catch(() => {});
+      };
+      setInterval(pollCount, 45000);
+
+      // Al volver a la pestaña también verificar
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) pollCount();
+      });
     },
 
     async cargar() {
