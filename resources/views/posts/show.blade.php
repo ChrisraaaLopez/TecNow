@@ -212,16 +212,27 @@
       </div>
       @endif
 
-      {{-- Título y contenido --}}
+      {{-- Título del Post--}}
       <h1 class="text-xl font-bold mb-3">{{ $post->title }}</h1>
-      <p class="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{{ $post->content }}</p>
 
-      {{-- Imagen del post --}}
-      @if($post->image)
-      <div class="mt-4 rounded-lg overflow-hidden border border-border">
-        <img src="{{ Storage::url($post->image) }}" alt="" class="w-full max-h-96 object-cover" />
-      </div>
-      @endif
+        {{-- Imágenes del Post --}}
+        @php $imageUrls = $post->image_urls; @endphp
+        @if(count($imageUrls) > 0)
+          <div class="mt-4 rounded-lg overflow-hidden border border-border">
+            @if(count($imageUrls) === 1)
+              <img src="{{ $imageUrls[0] }}" alt="" class="w-full max-h-96 object-cover" />
+            @else
+              <div class="grid grid-cols-2 gap-0.5">
+                @foreach($imageUrls as $url)
+                  <img src="{{ $url }}" alt="" class="w-full h-48 object-cover" />
+                @endforeach
+              </div>
+            @endif
+          </div>
+        @endif
+
+        {{-- Contenido del Post --}}
+      <p class="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{{ $post->content }}</p>
 
 
         {{-- Contenedor de Karma y Comentarios --}}

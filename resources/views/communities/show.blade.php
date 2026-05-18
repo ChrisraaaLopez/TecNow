@@ -191,9 +191,25 @@
           <h3 class="text-lg font-bold mb-2 hover:text-primary transition-colors">{{ $post->title }}</h3>
         </a>
         <p class="text-sm text-foreground whitespace-pre-wrap mb-4">{{ $post->content }}</p>
-        @if($post->image)
+        @php $imageUrls = $post->image_urls; @endphp
+        @if(count($imageUrls) > 0)
         <a href="{{ route('posts.show', $post) }}" class="block mb-4 rounded-lg overflow-hidden border border-border">
-          <img src="{{ Storage::url($post->image) }}" alt="" class="w-full max-h-64 object-cover hover:opacity-95 transition-opacity" />
+          @if(count($imageUrls) === 1)
+            <img src="{{ $imageUrls[0] }}" alt="" class="w-full max-h-64 object-cover hover:opacity-95 transition-opacity" />
+          @else
+            <div class="grid grid-cols-2 gap-0.5">
+              @foreach(array_slice($imageUrls, 0, 4) as $i => $url)
+                <div class="relative">
+                  <img src="{{ $url }}" alt="" class="w-full h-32 object-cover hover:opacity-95 transition-opacity" />
+                  @if($i === 3 && count($imageUrls) > 4)
+                    <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span class="text-white font-semibold text-lg">+{{ count($imageUrls) - 4 }}</span>
+                    </div>
+                  @endif
+                </div>
+              @endforeach
+            </div>
+          @endif
         </a>
         @endif
 

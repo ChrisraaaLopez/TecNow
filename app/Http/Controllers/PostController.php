@@ -30,7 +30,8 @@ class PostController extends Controller
             'title'        => 'required|string|max:255',
             'content'      => 'required|string',
             'community_id' => 'nullable|exists:communities,id',
-            'image'        => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
+            'images'       => 'nullable|array|max:5',
+            'images.*'     => 'image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ]);
 
         // Validaciones de comunidad
@@ -51,17 +52,18 @@ class PostController extends Controller
             }
         }
 
-        // Guardar imagen si se subió
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('posts', 'public');
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $imagePaths[] = $image->store('posts', 's3');
+            }
         }
 
         $post = Post::create([
             'user_id' => Auth::id(),
             'title'   => $validated['title'],
             'content' => $validated['content'],
-            'image'   => $imagePath,
+            'images'  => !empty($imagePaths) ? $imagePaths : null,
         ]);
 
         // Broadcast nueva publicación en tiempo real
@@ -106,13 +108,13 @@ class PostController extends Controller
         if ($request->hasFile('image')) {
             // Eliminar imagen anterior si existe
             if ($post->image) {
-                Storage::disk('public')->delete($post->image);
+                Storage::disk('s3')->delete($post->image);
             }
-            $imagePath = $request->file('image')->store('posts', 'public');
+            $imagePath = $request->file('image')->store('posts', 's3');
         }
 
         if ($request->boolean('remove_image') && $post->image) {
-            Storage::disk('public')->delete($post->image);
+            Storage::disk('s3')->delete($post->image);
             $imagePath = null;
         }
 
@@ -131,8 +133,11 @@ class PostController extends Controller
             abort(403);
         }
 
-        if ($post->image) {
-            Storage::disk('public')->delete($post->image);
+        foreach ($post->images ?? [] as $path) {
+            Storage::disk('s3')->delete($path);
+        }
+        if ($post->image && empty($post->images)) {
+            Storage::disk('s3')->delete($post->image);
         }
 
         $post->delete();

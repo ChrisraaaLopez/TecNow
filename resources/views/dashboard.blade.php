@@ -207,15 +207,22 @@
         </div>
         @endif
 
+        @php $imageUrls = $post->image_urls; @endphp
+
+        {{-- Título --}}
         <a href="{{ route('posts.show', $post) }}">
-          <h3 class="text-lg font-bold mb-2 hover:text-primary transition-colors">{{ $post->title }}</h3>
+          <h3 class="text-lg font-bold mb-2 hover:text-primary transition-colors leading-snug">{{ $post->title }}</h3>
         </a>
-        <p class="text-sm text-foreground whitespace-pre-wrap mb-4">{{ $post->content }}</p>
-        @if($post->image)
-        <a href="{{ route('posts.show', $post) }}" class="block mb-4 rounded-lg overflow-hidden border border-border">
-          <img src="{{ Storage::url($post->image) }}" alt="" class="w-full max-h-64 object-cover hover:opacity-95 transition-opacity" />
+
+        {{-- Primera imagen --}}
+        @if(count($imageUrls) > 0)
+        <a href="{{ route('posts.show', $post) }}" class="block mb-3 rounded-lg overflow-hidden border border-border">
+          <img src="{{ $imageUrls[0] }}" alt="" class="w-full max-h-72 object-cover hover:opacity-95 transition-opacity" />
         </a>
         @endif
+
+        {{-- Contenido truncado --}}
+        <p class="text-sm text-foreground line-clamp-4 mb-4">{{ $post->content }}</p>
 
         {{-- Contenedor de Karma y Comentarios --}}
         <div id="vote-bar-{{ $post->id }}" class="flex items-center gap-1 mt-2" x-data="{
@@ -301,6 +308,21 @@
                     <span id="comment-count-{{ $post->id }}" class="text-sm">{{ $post->comments->count() }}</span>
                 </a>
             </div>
+
+            {{-- Contador de imágenes --}}
+            @if(count($imageUrls) > 0)
+            <span class="text-gray-700 mx-1">·</span>
+            <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                <a href="{{ route('posts.show', $post) }}"
+                   class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span class="text-sm">{{ count($imageUrls) }}</span>
+                </a>
+            </div>
+            @endif
 
             {{-- Botón compartir --}}
             <x-share-button :post="$post" />

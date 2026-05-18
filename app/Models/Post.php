@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class Post extends Model
 {
@@ -19,6 +20,7 @@ class Post extends Model
     'title',
     'content',
     'image',
+    'images',
     'hot_score',
     'fijada',
     'shared_from_post_id',
@@ -26,6 +28,7 @@ class Post extends Model
 
   protected $casts = [
     'hot_score' => 'float',
+    'images'    => 'array',
   ];
 
   public function communities(): BelongsToMany
@@ -59,6 +62,25 @@ class Post extends Model
   }
 
   // Karma total calculado
+  public function getImageUrlsAttribute(): array
+  {
+    $paths = $this->images ?? ($this->image ? [$this->image] : []);
+    return array_map(
+      fn($path) => Storage::disk('s3')->temporaryUrl($path, now()->addHours(6)),
+      $paths
+    );
+  }
+
+  public function getImageUrlAttribute(): ?string
+  {
+    return $this->image_urls[0] ?? null;
+  }
+
+  public function hasImages(): bool
+  {
+    return !empty($this->images) || !empty($this->image);
+  }
+
   public function getKarmaAttribute(): int
   {
     return $this->votes()->sum('vote');
