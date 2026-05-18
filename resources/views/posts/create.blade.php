@@ -87,9 +87,10 @@
               Comunidad <span class="text-gray-500 font-normal">(opcional)</span>
             </label>
             @php
-              $avisos   = $communities->where('tipo', 'avisos');
-              $carreras = $communities->where('tipo', 'carrera');
-              $sinComunidades = $carreras->isEmpty() && $avisos->isEmpty();
+              $avisos    = $communities->where('tipo', 'avisos');
+              $carreras  = $communities->where('tipo', 'carrera');
+              $generales = $communities->where('tipo', 'general');
+              $sinComunidades = $carreras->isEmpty() && $avisos->isEmpty() && $generales->isEmpty();
             @endphp
             @if($sinComunidades && Auth::user()->rol !== 'admin')
               {{-- Sin comunidades unidas --}}
@@ -100,7 +101,7 @@
                 </svg>
                 <span>
                   No perteneces a ninguna comunidad todavía.
-                  <a href="{{ route('dashboard') }}" class="underline font-medium hover:text-yellow-900">Únete a una</a>
+                  <a href="{{ route('comunidades.index') }}" class="underline font-medium hover:text-yellow-900">Únete a una</a>
                   para poder publicar en ella.
                 </span>
               </div>
@@ -121,8 +122,17 @@
                 </optgroup>
                 @endif
                 @if($carreras->count())
-                <optgroup label="🎓 Mis comunidades">
+                <optgroup label="🎓 Por carrera">
                   @foreach($carreras as $c)
+                  <option value="{{ $c->id }}" {{ old('community_id', $selectedCommunityId) == $c->id ? 'selected' : '' }}>
+                    {{ $c->name }}
+                  </option>
+                  @endforeach
+                </optgroup>
+                @endif
+                @if($generales->count())
+                <optgroup label="💬 Generales">
+                  @foreach($generales as $c)
                   <option value="{{ $c->id }}" {{ old('community_id', $selectedCommunityId) == $c->id ? 'selected' : '' }}>
                     {{ $c->name }}
                   </option>
