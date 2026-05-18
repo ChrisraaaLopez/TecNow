@@ -494,16 +494,6 @@
                     window.RealtimeUtils.updateCommentCount(postId, e.commentCount);
                 });
         });
-
-        // Escuchar nuevas publicaciones y mostrarlas automáticamente
-        window.Echo.channel('feed').listen('.NewPost', function(e) {
-            fetch('/posts/' + e.postId + '/card', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(function(res) { return res.ok ? res.text() : null; })
-            .then(function(html) {
-                if (!html) return;
-                window.RealtimeUtils.prependPost(html);
                 // Suscribir al canal del nuevo post
                 window.Echo.channel('posts.' + e.postId)
                     .listen('.PostVoted', function(ev) {
