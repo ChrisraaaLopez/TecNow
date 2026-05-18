@@ -165,8 +165,8 @@
 
         {{-- Panel de notificaciones --}}
         <div x-show="open" x-cloak
-          class="absolute right-0 mt-2 w-96 rounded-2xl shadow-2xl overflow-hidden"
-          style="background:#fff; border:1px solid #e5e7eb; z-index:999; top:100%">
+          class="absolute right-0 mt-2 rounded-2xl shadow-2xl overflow-hidden"
+          style="background:#fff; border:1px solid #e5e7eb; z-index:999; top:100%; width:min(24rem, calc(100vw - 1rem))">
 
           {{-- Cabecera --}}
           <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid #f0f0f0">
@@ -358,6 +358,24 @@
         Crear publicación
       </a>
     </nav>
+
+    {{-- Comunidades del usuario --}}
+    @php $mobileComunidades = Auth::user()->communities()->orderBy('tipo')->orderBy('name')->get(); @endphp
+    @if($mobileComunidades->isNotEmpty())
+    <div style="border-top:1px solid rgba(255,255,255,0.15)" class="mt-2 pt-2">
+      <p class="text-xs font-semibold uppercase tracking-wider px-3 py-1" style="color:rgba(255,255,255,0.45)">Mis Comunidades</p>
+      @foreach($mobileComunidades as $mc)
+      <a href="{{ route('communities.show', $mc) }}"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
+        style="color:rgba(255,255,255,0.9)"
+        onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+        onmouseout="this.style.background='transparent'">
+        <x-community-icon :community="$mc" size="sm" />
+        <span class="truncate">{{ $mc->name }}</span>
+      </a>
+      @endforeach
+    </div>
+    @endif
 
     {{-- Separador --}}
     <div style="border-top:1px solid rgba(255,255,255,0.15)" class="my-2"></div>

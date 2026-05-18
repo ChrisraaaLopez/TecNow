@@ -42,22 +42,22 @@
 
     {{-- Info --}}
     <div class="px-6 pb-6">
-      <div class="flex items-end justify-between -mt-12 mb-4 flex-wrap gap-4">
-        <div class="relative w-24 h-24">
+      <div class="flex items-end justify-between -mt-12 mb-4 flex-wrap gap-3">
+        <div class="relative w-24 h-24 flex-shrink-0">
           <img src="{{ asset('avatars/' . Auth::user()->avatar) }}"
             class="w-full h-full rounded-full border-4 border-white object-cover shadow-md" />
           @if(Auth::user()->marco)
           <img src="{{ asset('marcos/' . Auth::user()->marco) }}" class="absolute inset-0 w-full h-full z-10 pointer-events-none" />
           @endif
         </div>
-        <div class="flex items-end justify-between -mt-12 mb-4 flex-wrap gap-10">
+        <div class="flex items-center gap-2 flex-wrap pt-14 sm:pt-0">
           <button onclick="document.getElementById('passModal').classList.remove('hidden')"
-            class="hover:scale-105 transition-transform text-sm flex items-center gap-2 px-4 py-2 rounded-lg"
+            class="hover:scale-105 transition-transform text-sm flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap"
             style="border: 3px solid #1e40af; background-color: #1e40af; color: white;">
             Cambiar contraseña
           </button>
           <button onclick="document.getElementById('editModal').classList.remove('hidden')"
-            class="hover:scale-105 transition-transform text-sm flex items-center gap-2 px-4 py-2 rounded-lg"
+            class="hover:scale-105 transition-transform text-sm flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap"
             style="border: 3px solid #1e40af; background-color: #1e40af; color: white;">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
