@@ -21,6 +21,19 @@
     <div class="border-t border-sidebar-border pt-4">
       <p class="text-xs text-muted-foreground px-3 mb-3 uppercase tracking-wider">Comunidades</p>
       <div class="space-y-1">
+        {{-- Avisos primero --}}
+        @php $avisos = $communities->where('tipo', 'avisos')->first(); @endphp
+        @if($avisos)
+        <a href="{{ route('communities.show', $avisos) }}"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ $avisos->id === $community->id ? 'bg-secondary text-secondary-foreground' : 'hover:bg-sidebar-accent' }}">
+          <x-community-icon :community="$avisos" size="xs" />
+          <div class="flex-1 min-w-0">
+            <p class="text-xs truncate font-medium text-blue-600">{{ $avisos->name }}</p>
+            <p class="text-xs text-muted-foreground">{{ $avisos->users_count }} miembros</p>
+          </div>
+        </a>
+        @endif
+        {{-- Por carrera --}}
         @foreach($communities->where('tipo', 'carrera') as $c)
         <a href="{{ route('communities.show', $c) }}"
           class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ $c->id === $community->id ? 'bg-secondary text-secondary-foreground' : 'hover:bg-sidebar-accent' }}">
@@ -31,18 +44,22 @@
           </div>
         </a>
         @endforeach
-        @php $avisos = $communities->where('tipo', 'avisos')->first(); @endphp
-        @if($avisos)
-        <a href="{{ route('communities.show', $avisos) }}"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ $avisos->id === $community->id ? 'bg-secondary text-secondary-foreground' : 'hover:bg-sidebar-accent' }}">
-          <x-community-icon :community="$avisos" size="xs" />
+        {{-- Generales (Mejoras y Sugerencias, etc.) --}}
+        @foreach($communities->where('tipo', 'general') as $c)
+        <a href="{{ route('communities.show', $c) }}"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ $c->id === $community->id ? 'bg-secondary text-secondary-foreground' : 'hover:bg-sidebar-accent' }}">
+          <x-community-icon :community="$c" size="xs" />
           <div class="flex-1 min-w-0">
-            <p class="text-xs truncate">{{ $avisos->name }}</p>
-            <p class="text-xs text-muted-foreground">{{ $avisos->users_count }} miembros</p>
+            <p class="text-xs truncate">{{ $c->name }}</p>
+            <p class="text-xs text-muted-foreground">{{ $c->users_count }} miembros</p>
           </div>
         </a>
-        @endif
+        @endforeach
       </div>
+      <a href="{{ route('comunidades.index') }}"
+        class="block w-full mt-3 px-3 py-2 text-xs text-primary hover:bg-sidebar-accent rounded-lg transition-colors text-center">
+        Explorar todas →
+      </a>
     </div>
   </aside>
 
@@ -126,7 +143,13 @@
               @endif
             </a>
             <div>
-              <a href="{{ route('perfil.show', $post->user->username) }}" class="text-sm font-semibold hover:text-primary transition-colors">{{ $post->user->name }}</a>
+              <a href="{{ route('perfil.show', $post->user->username) }}"
+                class="text-sm font-semibold hover:text-primary transition-colors {{ $post->user->rol === 'admin' ? 'text-yellow-500' : '' }}">
+                {{ $post->user->name }}
+                @if($post->user->rol === 'admin')
+                <svg class="inline w-3.5 h-3.5 text-yellow-400 ml-0.5 align-middle" viewBox="0 0 24 24" fill="currentColor"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                @endif
+              </a>
               <p class="text-xs text-muted-foreground">{{ $post->created_at->diffForHumans() }}</p>
             </div>
           </div>
@@ -188,35 +211,22 @@
         @endif
 
         <a href="{{ route('posts.show', $post) }}">
-          <h3 class="text-lg font-bold mb-2 hover:text-primary transition-colors">{{ $post->title }}</h3>
+          <h3 class="text-lg font-bold mb-2 hover:text-primary transition-colors leading-snug">{{ $post->title }}</h3>
         </a>
-        <p class="text-sm text-foreground whitespace-pre-wrap mb-4">{{ $post->content }}</p>
+
         @php $imageUrls = $post->image_urls; @endphp
+        {{-- Imagen de portada: siempre la primera con blur (igual que dashboard) --}}
         @if(count($imageUrls) > 0)
-        <a href="{{ route('posts.show', $post) }}" class="block mb-4 rounded-lg overflow-hidden border border-border">
-          @if(count($imageUrls) === 1)
-            {{-- Imagen única: fondo borroso + imagen contenida (igual que dashboard y show) --}}
-            <div class="relative w-full bg-black" style="height:256px">
-              <img src="{{ $imageUrls[0] }}" alt="" class="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-50 pointer-events-none select-none" />
-              <img src="{{ $imageUrls[0] }}" alt="" class="relative w-full h-full object-contain hover:opacity-95 transition-opacity z-10" />
-            </div>
-          @else
-            {{-- Múltiples imágenes: grid 2x2 con overlay +N --}}
-            <div class="grid grid-cols-2 gap-0.5">
-              @foreach(array_slice($imageUrls, 0, 4) as $i => $url)
-                <div class="relative {{ count($imageUrls) === 3 && $i === 0 ? 'row-span-2' : '' }}">
-                  <img src="{{ $url }}" alt="" class="w-full h-32 object-cover hover:opacity-95 transition-opacity" />
-                  @if($i === 3 && count($imageUrls) > 4)
-                    <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span class="text-white font-semibold text-lg">+{{ count($imageUrls) - 4 }}</span>
-                    </div>
-                  @endif
-                </div>
-              @endforeach
-            </div>
-          @endif
+        <a href="{{ route('posts.show', $post) }}" class="block mb-3 rounded-lg overflow-hidden border border-border bg-black" style="height:288px">
+          <div class="relative w-full h-full">
+            <img src="{{ $imageUrls[0] }}" alt="" class="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-50 pointer-events-none select-none" />
+            <img src="{{ $imageUrls[0] }}" alt="" class="relative w-full h-full object-contain hover:opacity-95 transition-opacity z-10" />
+          </div>
         </a>
         @endif
+
+        {{-- Contenido truncado a 4 líneas (igual que dashboard) --}}
+        <p class="text-sm text-foreground line-clamp-4 mb-4">{{ $post->content }}</p>
 
         <div id="vote-bar-{{ $post->id }}" class="flex items-center gap-1 mt-2" x-data="{
           karma: {{ $karma }}, userVote: {{ $userVote ?? 'null' }}, loading: false,
@@ -261,6 +271,20 @@
               <span id="comment-count-{{ $post->id }}" class="text-sm">{{ $post->comments->count() }}</span>
             </a>
           </div>
+
+          {{-- Contador de imágenes --}}
+          @if(count($imageUrls) > 0)
+          <span class="text-gray-700 mx-1">·</span>
+          <div class="flex items-center bg-gray-100 rounded-lg p-1">
+            <a href="{{ route('posts.show', $post) }}" class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span class="text-sm">{{ count($imageUrls) }}</span>
+            </a>
+          </div>
+          @endif
 
           <span class="text-gray-700 mx-1">·</span>
 
