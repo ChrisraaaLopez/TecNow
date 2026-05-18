@@ -143,7 +143,7 @@
 
       {{-- Campana con popup --}}
       <div class="relative">
-        <button @click="open = !open; if(open) cargar()"
+        <button x-ref="bellBtn" @click="open = !open; if(open) { posicionarPanel(); cargar(); }"
           class="relative p-2 rounded-lg transition-colors"
           style="color:rgba(255,255,255,0.8)"
           onmouseover="this.style.background='rgba(255,255,255,0.12)'"
@@ -166,7 +166,7 @@
         {{-- Panel de notificaciones --}}
         <div x-show="open" x-cloak
           class="fixed rounded-2xl shadow-2xl overflow-hidden"
-          style="background:#fff; border:1px solid #e5e7eb; z-index:9999; top:73px; right:0.5rem; width:min(24rem, calc(100vw - 1rem))">
+          :style="'background:#fff; border:1px solid #e5e7eb; z-index:9999; ' + panelStyle">
 
           {{-- Cabecera --}}
           <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid #f0f0f0">
@@ -528,6 +528,26 @@ function notificacionesPanel() {
     cargando: false,
     notifs: [],
     sinLeer: {{ Auth::user()->unreadNotifications->count() }},
+    panelStyle: 'top:70px; right:4px; width:min(24rem, calc(100vw - 8px))',
+
+    // Calcula la posición del panel justo debajo del botón de campana
+    posicionarPanel() {
+      this.$nextTick(() => {
+        const btn = this.$refs.bellBtn;
+        if (!btn) return;
+        const rect = btn.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const panelW = Math.min(384, vw - 8);   // 384px = 24rem
+        // Alinear el borde derecho del panel con el del botón
+        let right = vw - rect.right;
+        if (right < 4) right = 4;
+        // Si el panel se saldría por la izquierda, ajustar
+        if ((vw - right - panelW) < 4) {
+          right = Math.max(4, vw - panelW - 4);
+        }
+        this.panelStyle = `top:${Math.round(rect.bottom + 6)}px; right:${Math.round(right)}px; width:${panelW}px`;
+      });
+    },
 
     init() {
       const userId = document.querySelector('meta[name="user-id"]')?.content;
@@ -537,26 +557,37 @@ function notificacionesPanel() {
       const setupEcho = () => {
         if (!window.Echo) return;
         try {
+          // Diagnóstico de conexión
+          const pusher = window.Echo.connector?.pusher;
+          if (pusher) {
+            pusher.connection.bind('connected',    () => console.log('[Echo] WebSocket conectado ✓'));
+            pusher.connection.bind('disconnected', () => console.warn('[Echo] WebSocket desconectado'));
+            pusher.connection.bind('error',        (e) => console.warn('[Echo] Error WS:', e));
+            pusher.connection.bind('failed',       ()  => console.warn('[Echo] WS falló (sin soporte)'));
+            console.log('[Echo] Estado actual:', pusher.connection.state);
+          }
+
           window.Echo.private(`App.Models.User.${userId}`)
             .notification((notification) => {
               this.sinLeer++;
               if (this.open) {
                 this.notifs.unshift({
-                  id: notification.id,
-                  type: notification.type,
+                  id: notification.id ?? Date.now(),
+                  type: notification.type ?? '',
                   data: notification,
                   read_at: null,
                   created_at: new Date().toISOString(),
                 });
               }
             });
-        } catch(e) { console.warn('[Echo]', e); }
+          console.log('[Echo] Suscrito al canal App.Models.User.' + userId);
+        } catch(e) { console.warn('[Echo] Error al suscribirse:', e); }
       };
 
       if (window.Echo) { setupEcho(); }
       else { window.addEventListener('echo-ready', setupEcho, { once: true }); }
 
-      // — Polling de respaldo cada 45 s (cubre fallos del WebSocket) —
+      // — Polling de respaldo cada 15 s (cubre fallos del WebSocket) —
       const pollCount = () => {
         if (this.open) return;
         fetch('/notificaciones/json')
@@ -564,9 +595,9 @@ function notificacionesPanel() {
           .then(d => { if (d.sinLeer > this.sinLeer) this.sinLeer = d.sinLeer; })
           .catch(() => {});
       };
-      setInterval(pollCount, 45000);
+      setInterval(pollCount, 15000);
 
-      // Al volver a la pestaña también verificar
+      // Al volver a la pestaña también verificar de inmediato
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) pollCount();
       });
