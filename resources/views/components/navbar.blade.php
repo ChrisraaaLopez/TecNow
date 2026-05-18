@@ -376,6 +376,31 @@ function notificacionesPanel() {
     notifs: [],
     sinLeer: {{ Auth::user()->unreadNotifications->count() }},
 
+    init() {
+      const userId = document.querySelector('meta[name="user-id"]')?.content;
+      const setupEcho = () => {
+        if (!userId) return;
+        window.Echo.private(`App.Models.User.${userId}`)
+          .notification((notification) => {
+            this.sinLeer++;
+            if (this.open) {
+              this.notifs.unshift({
+                id: notification.id,
+                type: notification.type,
+                data: notification,
+                read_at: null,
+                created_at: new Date().toISOString(),
+              });
+            }
+          });
+      };
+      if (userId && window.Echo) {
+        setupEcho();
+      } else if (userId) {
+        window.addEventListener('echo-ready', setupEcho, { once: true });
+      }
+    },
+
     async cargar() {
       this.cargando = true;
       try {
@@ -404,16 +429,20 @@ function notificacionesPanel() {
     },
 
     async irA(n) {
+      // La URL puede estar en n.data.url (notif. de BD) o directamente en n.data (broadcast)
+      const url = n.data?.url || null;
       if (!n.read_at) {
-        await fetch(`/notificaciones/${n.id}/leer`, {
-          method: 'POST',
-          headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
-        });
+        try {
+          await fetch(`/notificaciones/${n.id}/leer`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
+          });
+        } catch(e) {}
         n.read_at = new Date().toISOString();
         this.sinLeer = Math.max(0, this.sinLeer - 1);
       }
-      if (n.data.url) window.location.href = n.data.url;
       this.open = false;
+      if (url) window.location.href = url;
     },
 
     // SVG + color de fondo según tipo de notificación

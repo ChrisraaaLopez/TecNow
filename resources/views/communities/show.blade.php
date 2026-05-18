@@ -191,13 +191,29 @@
           <h3 class="text-lg font-bold mb-2 hover:text-primary transition-colors">{{ $post->title }}</h3>
         </a>
         <p class="text-sm text-foreground whitespace-pre-wrap mb-4">{{ $post->content }}</p>
-        @if($post->image)
+        @php $imageUrls = $post->image_urls; @endphp
+        @if(count($imageUrls) > 0)
         <a href="{{ route('posts.show', $post) }}" class="block mb-4 rounded-lg overflow-hidden border border-border">
-          <img src="{{ Storage::url($post->image) }}" alt="" class="w-full max-h-64 object-cover hover:opacity-95 transition-opacity" />
+          @if(count($imageUrls) === 1)
+            <img src="{{ $imageUrls[0] }}" alt="" class="w-full max-h-64 object-cover hover:opacity-95 transition-opacity" />
+          @else
+            <div class="grid grid-cols-2 gap-0.5">
+              @foreach(array_slice($imageUrls, 0, 4) as $i => $url)
+                <div class="relative">
+                  <img src="{{ $url }}" alt="" class="w-full h-32 object-cover hover:opacity-95 transition-opacity" />
+                  @if($i === 3 && count($imageUrls) > 4)
+                    <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span class="text-white font-semibold text-lg">+{{ count($imageUrls) - 4 }}</span>
+                    </div>
+                  @endif
+                </div>
+              @endforeach
+            </div>
+          @endif
         </a>
         @endif
 
-        <div class="flex items-center gap-1 mt-2" x-data="{
+        <div id="vote-bar-{{ $post->id }}" class="flex items-center gap-1 mt-2" x-data="{
           karma: {{ $karma }}, userVote: {{ $userVote ?? 'null' }}, loading: false,
           async vote(value) {
             if (this.loading) return; this.loading = true;
@@ -237,7 +253,7 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
               </svg>
-              <span class="text-sm">{{ $post->comments->count() }}</span>
+              <span id="comment-count-{{ $post->id }}" class="text-sm">{{ $post->comments->count() }}</span>
             </a>
           </div>
 
@@ -325,4 +341,19 @@
   </div>
 
 </div>
+<script>
+(function() {
+    const postIds = @json($posts->pluck('id'));
+    function setup() {
+        postIds.forEach(function(postId) {
+            window.Echo.channel('posts.' + postId)
+                .listen('.PostVoted', function(e) { window.RealtimeUtils.updateVote(postId, e.karma); })
+                .listen('.CommentAdded', function(e) { window.RealtimeUtils.updateCommentCount(postId, e.commentCount); });
+        });
+        // Las vistas de comunidades ordenan por score, no se inyectan nuevos posts aquí
+    }
+    if (window.Echo) { setup(); }
+    else { window.addEventListener('echo-ready', setup, { once: true }); }
+})();
+</script>
 @endsection

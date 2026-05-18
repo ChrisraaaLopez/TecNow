@@ -15,14 +15,23 @@ class NotificationController extends Controller
 
     public function markAsRead(string $id)
     {
-        $notification = Auth::user()->notifications()->findOrFail($id);
-        $notification->markAsRead();
+        $notification = Auth::user()->notifications()->find($id);
+        if ($notification) {
+            $notification->markAsRead();
+        }
+        // Devolver JSON para que el fetch del navbar funcione sin redirects
+        if (request()->ajax() || request()->wantsJson() || request()->hasHeader('X-Requested-With')) {
+            return response()->json(['ok' => true]);
+        }
         return back()->with('success', 'Notificación marcada como leída.');
     }
 
     public function markAllAsRead()
     {
         Auth::user()->unreadNotifications->markAsRead();
+        if (request()->ajax() || request()->wantsJson() || request()->hasHeader('X-Requested-With')) {
+            return response()->json(['ok' => true]);
+        }
         return back()->with('success', 'Todas las notificaciones marcadas como leídas.');
     }
 

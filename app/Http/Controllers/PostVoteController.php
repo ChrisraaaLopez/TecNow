@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PostVotedEvent;
 use App\Notifications\NuevoVotoNotification;
 use Illuminate\Http\Request;
 use App\Models\Post;
@@ -46,9 +47,20 @@ class PostVoteController extends Controller
 
         $karma = PostVote::where('post_id', $post->id)->sum('vote');
 
-        // Notificar al autor en hitos de karma (5, 10, 25, 50...)
-        if ($post->user_id !== Auth::id() && in_array($karma, [5, 10, 25, 50, 100])) {
-            $post->user->notify(new NuevoVotoNotification($post, $karma));
+        // Broadcast en tiempo real el nuevo karma
+        try {
+            PostVotedEvent::dispatch($post->id, $karma);
+        } catch (\Exception $e) {
+            // Si Reverb no está disponible, el voto igual se guarda
+        }
+
+        // Notificar al autor cuando recibe un upvote nuevo
+        try {
+            if ($post->user_id !== Auth::id() && $value === 1 && !$existing) {
+                $post->user->notify(new NuevoVotoNotification($post, $karma, Auth::user()));
+            }
+        } catch (\Exception $e) {
+            // Si la notificación falla, el voto igual se guarda
         }
         $userVote = PostVote::where('user_id', Auth::id())
             ->where('post_id', $post->id)

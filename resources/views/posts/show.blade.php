@@ -26,14 +26,6 @@
         </svg>
         <span>Popular</span>
       </a>
-      <a href="{{ route('dashboard', ['sort' => 'trending']) }}"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-        </svg>
-        <span>Trending</span>
-      </a>
     </nav>
     <div class="border-t border-sidebar-border pt-4">
       <div class="flex items-center justify-between mb-3 px-3">
@@ -220,15 +212,71 @@
       </div>
       @endif
 
-      {{-- Título y contenido --}}
+      {{-- Título del Post--}}
       <h1 class="text-xl font-bold mb-3">{{ $post->title }}</h1>
+
+        {{-- Imágenes del Post --}}
+        @php $imageUrls = $post->image_urls; @endphp
+        @if(count($imageUrls) === 1)
+          <div class="mt-4 rounded-lg overflow-hidden border border-border">
+            <img src="{{ $imageUrls[0] }}" alt="" class="w-full max-h-96 object-cover" />
+          </div>
+        @elseif(count($imageUrls) > 1)
+          {{-- Carrusel --}}
+          <div class="mt-4 rounded-lg overflow-hidden border border-border relative"
+               x-data="{ current: 0, total: {{ count($imageUrls) }} }">
+
+            {{-- Imágenes --}}
+            @foreach($imageUrls as $i => $url)
+            <div x-show="current === {{ $i }}" x-cloak>
+              <img src="{{ $url }}" alt="Imagen {{ $i + 1 }}"
+                   class="w-full max-h-96 object-cover" />
+            </div>
+            @endforeach
+
+            {{-- Flecha anterior --}}
+            <button type="button"
+              @click="current = (current - 1 + total) % total"
+              class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white rounded-full p-2 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+
+            {{-- Flecha siguiente --}}
+            <button type="button"
+              @click="current = (current + 1) % total"
+              class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white rounded-full p-2 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+
+            {{-- Puntos indicadores --}}
+            <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+              @foreach($imageUrls as $i => $url)
+              <button type="button" @click="current = {{ $i }}"
+                :class="current === {{ $i }}
+                  ? 'bg-white w-2.5 h-2.5'
+                  : 'bg-white/50 hover:bg-white/80 w-2 h-2'"
+                class="rounded-full transition-all duration-200">
+              </button>
+              @endforeach
+            </div>
+
+          </div>
+        @endif
+
+        {{-- Contenido del Post --}}
       <p class="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{{ $post->content }}</p>
 
 
         {{-- Contenedor de Karma y Comentarios --}}
-        <div class="flex items-center gap-1 mt-2" x-data="{
+        <div id="vote-bar-{{ $post->id }}" class="flex items-center gap-1 mt-2"
+             x-data="{
                             karma: {{ $karma }},
                             userVote: {{ $userVote ?? 'null' }},
+                            commentCount: {{ $post->comments->count() }},
                             loading: false,
                             async vote(value) {
                                 if (this.loading) return;
@@ -245,12 +293,12 @@
                                     const data = await res.json();
                                     this.karma = data.karma;
                                     this.userVote = data.user_vote;
-
                                 } finally {
                                     this.loading = false;
                                 }
                             }
-                        }">
+                        }"
+            >
             <div class="flex items-center bg-gray-100 rounded-lg">
                 {{-- Upvote --}}
                 <button type="button" @click="vote(1)" :disabled="loading"
@@ -300,20 +348,39 @@
 
             {{-- Contador de comentarios --}}
             <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                <a href=""
+                <a href="#comentarios"
                    class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <span class="text-sm">{{ $post->comments->count() }}</span>
+                    <span class="text-sm" x-text="commentCount"></span>
                 </a>
             </div>
+
+            {{-- Contador de imágenes --}}
+            @if(count($imageUrls) > 0)
+            <span class="text-gray-700 mx-1">·</span>
+            <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                <a href="#"
+                   class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors"
+                   @click.prevent="document.querySelector('[x-data*=current]')?.scrollIntoView({ behavior: 'smooth' })">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span class="text-sm">{{ count($imageUrls) }}</span>
+                </a>
+            </div>
+            @endif
+
+            {{-- Botón compartir --}}
+            <x-share-button :post="$post" />
         </div>
     </div>
 
       {{-- SECCIÓN DE COMENTARIOS --}}
-      <div class="mt-4 bg-card border border-border rounded-lg p-6">
+      <div id="comentarios" class="mt-4 bg-card border border-border rounded-lg p-6">
 
           {{-- Encabezado --}}
           <h2 class="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wide">
@@ -350,7 +417,7 @@
           </form>
 
           {{-- Lista de comentarios --}}
-          <div class="space-y-4">
+          <div class="space-y-4" id="comments-list">
               @forelse($comments as $comment)
                   @php
                       $commentKarma    = $comment->votes->sum('vote');
@@ -381,31 +448,11 @@
 
                               {{-- Karma del comentario --}}
                               <div class="flex items-center gap-1"
-                                   x-data="{
-                                     karma: {{ $commentKarma }},
-                                     userVote: {{ $commentUserVote ?? 'null' }},
-                                     loading: false,
-                                     async vote(value) {
-                                         if (this.loading) return;
-                                         this.loading = true;
-                                         try {
-                                             const res = await fetch('{{ route('comments.vote', $comment) }}', {
-                                                 method: 'POST',
-                                                 headers: {
-                                                     'Content-Type': 'application/json',
-                                                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                                 },
-                                                 body: JSON.stringify({ vote: value }),
-                                             });
-                                             const data = await res.json();
-                                             this.karma = data.karma;
-                                             this.userVote = data.user_vote;
-                                         } finally {
-                                             this.loading = false;
-                                         }
-                                     }
-                                 }">
-                                  <button type="button" @click="vote(1)" :disabled="loading"
+                                   id="comment-vote-bar-{{ $comment->id }}"
+                                   x-data="{ karma: {{ $commentKarma }}, userVote: {{ $commentUserVote ?? 'null' }}, loading: false }">
+                                  <button type="button"
+                                          @click="window.voteComment({{ $comment->id }}, '{{ route('comments.vote', $comment) }}', 1)"
+                                          :disabled="loading"
                                           :class="userVote === 1 ? 'text-orange-400' : 'text-gray-500 hover:text-orange-400'"
                                           class="p-1 rounded transition-colors">
                                       <svg class="w-3.5 h-3.5" :fill="userVote === 1 ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
@@ -415,7 +462,9 @@
                                   <span class="text-xs font-semibold min-w-[1.2rem] text-center"
                                         :class="karma > 0 ? 'text-orange-400' : karma < 0 ? 'text-blue-400' : 'text-gray-500'"
                                         x-text="karma"></span>
-                                  <button type="button" @click="vote(-1)" :disabled="loading"
+                                  <button type="button"
+                                          @click="window.voteComment({{ $comment->id }}, '{{ route('comments.vote', $comment) }}', -1)"
+                                          :disabled="loading"
                                           :class="userVote === -1 ? 'text-blue-400' : 'text-gray-500 hover:text-blue-400'"
                                           class="p-1 rounded transition-colors">
                                       <svg class="w-3.5 h-3.5" :fill="userVote === -1 ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
@@ -471,6 +520,34 @@
                                     </div>
 
                                 </div>
+
+                              {{-- Reportar comentario (solo si no eres el autor) --}}
+                              @if($comment->user_id !== Auth::id())
+                              <div x-data="{ showReportComment: false }" class="relative">
+                                  <button @click="showReportComment = !showReportComment" type="button"
+                                          class="text-xs text-gray-400 hover:text-red-500 transition-colors">
+                                      Reportar
+                                  </button>
+                                  <div x-show="showReportComment" x-cloak
+                                       class="absolute left-0 top-6 z-50 w-64 p-3 bg-white border border-red-200 rounded-lg shadow-lg">
+                                      <form method="POST" action="{{ route('reportes.store') }}" class="flex flex-col gap-2">
+                                          @csrf
+                                          <input type="hidden" name="comment_id" value="{{ $comment->id }}">
+                                          <select name="motivo" required class="w-full px-2 py-1.5 rounded border border-gray-300 text-xs text-gray-900 bg-white">
+                                              <option value="">Motivo...</option>
+                                              <option value="spam">Spam</option>
+                                              <option value="contenido inapropiado">Contenido inapropiado</option>
+                                              <option value="acoso">Acoso</option>
+                                              <option value="otro">Otro</option>
+                                          </select>
+                                          <div class="flex gap-2 justify-end">
+                                              <button type="button" @click="showReportComment = false" class="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100">Cancelar</button>
+                                              <button type="submit" class="text-xs px-2 py-1 rounded text-white bg-red-500 hover:bg-red-600">Enviar</button>
+                                          </div>
+                                      </form>
+                                  </div>
+                              </div>
+                              @endif
 
                               {{-- Eliminar comentario --}}
                               @if($comment->user_id === Auth::id() || Auth::user()->global_role === 'admin')
@@ -552,31 +629,11 @@
                                               <div class="flex items-center gap-3 mt-2">
                                                   {{-- Karma reply --}}
                                                   <div class="flex items-center gap-1"
-                                                       x-data="{
-                                                         karma: {{ $replyKarma }},
-                                                         userVote: {{ $replyUserVote ?? 'null' }},
-                                                         loading: false,
-                                                         async vote(value) {
-                                                             if (this.loading) return;
-                                                             this.loading = true;
-                                                             try {
-                                                                 const res = await fetch('{{ route('comments.vote', $reply) }}', {
-                                                                     method: 'POST',
-                                                                     headers: {
-                                                                         'Content-Type': 'application/json',
-                                                                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                                                     },
-                                                                     body: JSON.stringify({ vote: value }),
-                                                                 });
-                                                                 const data = await res.json();
-                                                                 this.karma = data.karma;
-                                                                 this.userVote = data.user_vote;
-                                                             } finally {
-                                                                 this.loading = false;
-                                                             }
-                                                         }
-                                                     }">
-                                                      <button type="button" @click="vote(1)" :disabled="loading"
+                                                       id="comment-vote-bar-{{ $reply->id }}"
+                                                       x-data="{ karma: {{ $replyKarma }}, userVote: {{ $replyUserVote ?? 'null' }}, loading: false }">
+                                                      <button type="button"
+                                                              @click="window.voteComment({{ $reply->id }}, '{{ route('comments.vote', $reply) }}', 1)"
+                                                              :disabled="loading"
                                                               :class="userVote === 1 ? 'text-orange-400' : 'text-gray-500 hover:text-orange-400'"
                                                               class="p-1 rounded transition-colors">
                                                           <svg class="w-3.5 h-3.5" :fill="userVote === 1 ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
@@ -586,7 +643,9 @@
                                                       <span class="text-xs font-semibold min-w-[1.2rem] text-center"
                                                             :class="karma > 0 ? 'text-orange-400' : karma < 0 ? 'text-blue-400' : 'text-gray-500'"
                                                             x-text="karma"></span>
-                                                      <button type="button" @click="vote(-1)" :disabled="loading"
+                                                      <button type="button"
+                                                              @click="window.voteComment({{ $reply->id }}, '{{ route('comments.vote', $reply) }}', -1)"
+                                                              :disabled="loading"
                                                               :class="userVote === -1 ? 'text-blue-400' : 'text-gray-500 hover:text-blue-400'"
                                                               class="p-1 rounded transition-colors">
                                                           <svg class="w-3.5 h-3.5" :fill="userVote === -1 ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
@@ -730,4 +789,76 @@
   </div>
 </div>
 
+<script>
+// Función global para votar en comentarios — usa Alpine.$data() para garantizar
+// actualización reactiva (el patrón async inline pierde contexto en Alpine).
+window.voteComment = function(commentId, url, value) {
+    var el = document.getElementById('comment-vote-bar-' + commentId);
+    if (!el || !window.Alpine || !window.Alpine.$data) return;
+    var d = window.Alpine.$data(el);
+    if (d.loading) return;
+    d.loading = true;
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+        body: JSON.stringify({ vote: value }),
+    })
+    .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+    })
+    .then(function(data) {
+        d.karma    = data.karma;
+        d.userVote = (data.user_vote !== undefined && data.user_vote !== null) ? data.user_vote : null;
+    })
+    .catch(function(e) { console.error('[CommentVote]', e); })
+    .finally(function() { d.loading = false; });
+};
+
+(function() {
+    const postId = {{ $post->id }};
+
+    function updateVoteBar(karma) {
+        const el = document.getElementById('vote-bar-' + postId);
+        if (!el || !window.Alpine || !window.Alpine.$data) return;
+        window.Alpine.$data(el).karma = karma;
+    }
+
+    function updateCommentCount(count) {
+        const el = document.getElementById('comment-count-' + postId);
+        if (el) el.textContent = count;
+    }
+
+    function appendNewComment(commentId) {
+        fetch('/comments/' + commentId + '/card', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(res) { return res.ok ? res.text() : null; })
+        .then(function(html) {
+            if (html) window.RealtimeUtils.prependComment(html);
+        })
+        .catch(function() {});
+    }
+
+    function setupEchoListeners() {
+        window.Echo.channel('posts.' + postId)
+            .listen('.PostVoted', function(e) {
+                updateVoteBar(e.karma);
+            })
+            .listen('.CommentAdded', function(e) {
+                updateCommentCount(e.commentCount);
+                // Solo inyectar comentarios de primer nivel (sin parent_id)
+                if (e.commentId && !e.parentId) {
+                    appendNewComment(e.commentId);
+                }
+            });
+    }
+
+    if (window.Echo) { setupEchoListeners(); }
+    else { window.addEventListener('echo-ready', setupEchoListeners, { once: true }); }
+})();
+</script>
 @endsection

@@ -159,47 +159,68 @@
             </div>
           </div>
 
-          {{-- Imagen (opcional) --}}
+          {{-- Imágenes (opcional, máx. 5) --}}
           <div>
-            <label class="block text-sm font-medium text-gray-400 mb-1.5">
-              Imagen <span class="text-gray-500 font-normal">(opcional)</span>
-            </label>
-            <div
-              class="relative border-2 border-dashed rounded-lg transition-colors cursor-pointer
-                     {{ $errors->has('image') ? 'border-red-500' : 'border-gray-300 hover:border-primary' }}"
-              @click="$refs.imageInput.click()"
-              @dragover.prevent="dragging = true"
-              @dragleave.prevent="dragging = false"
-              @drop.prevent="handleDrop($event)"
-              :class="dragging ? 'border-primary bg-blue-50' : ''">
-
-              {{-- Preview --}}
-              <div x-show="preview" class="relative">
-                <img :src="preview" class="w-full max-h-64 object-cover rounded-lg" />
-                <button type="button" @click.stop="clearImage()"
-                  class="absolute top-2 right-2 bg-black/70 hover:bg-black text-white rounded-full p-1.5 transition-colors">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {{-- Placeholder --}}
-              <div x-show="!preview" class="flex flex-col items-center justify-center py-8 px-4 text-center">
-                <svg class="w-10 h-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p class="text-sm text-gray-400">Arrastra una imagen o <span class="text-primary">haz clic para seleccionar</span></p>
-                <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF, WEBP — máx. 2 MB</p>
-              </div>
-
-              <input type="file" name="image" accept="image/*" class="hidden"
-                x-ref="imageInput" @change="handleFile($event)" />
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-sm font-medium text-gray-400">
+                Imágenes <span class="text-gray-500 font-normal">(opcional)</span>
+              </label>
+              <span class="text-xs text-gray-500" x-text="filled + '/5 imágenes'"></span>
             </div>
-            @error('image')
+
+            {{-- 5 inputs individuales, uno por slot --}}
+            @for($i = 0; $i < 5; $i++)
+              <input type="file" name="images[]" accept="image/*" class="hidden"
+                x-ref="slot{{ $i }}" @change="handleSlot({{ $i }}, $event)" />
+            @endfor
+
+            {{-- Grid de previews + zona de agregar --}}
+            <div class="grid grid-cols-3 gap-2">
+
+              {{-- Slots con preview --}}
+              <template x-for="i in [0,1,2,3,4]" :key="i">
+                <div x-show="slots[i].preview !== null"
+                  class="relative rounded-lg overflow-hidden border border-border aspect-square bg-gray-100">
+                  <img :src="slots[i].preview" class="w-full h-full object-cover" />
+                  <button type="button" @click.prevent="clearSlot(i)"
+                    class="absolute top-1 right-1 bg-black/70 hover:bg-black text-white rounded-full p-1 transition-colors">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </template>
+
+              {{-- Zona de agregar (visible si hay slots libres) --}}
+              <div x-show="filled < 5"
+                class="relative border-2 border-dashed rounded-lg transition-colors cursor-pointer aspect-square
+                       {{ $errors->has('images') || $errors->has('images.*') ? 'border-red-500' : 'border-gray-300 hover:border-primary' }}"
+                @click="openNext()"
+                @dragover.prevent="dragging = true"
+                @dragleave.prevent="dragging = false"
+                @drop.prevent="handleDrop($event)"
+                :class="dragging ? 'border-primary bg-blue-50' : ''">
+                <div class="flex flex-col items-center justify-center h-full text-center px-2">
+                  <svg class="w-7 h-7 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p class="text-xs text-gray-400 leading-tight">Haz clic o arrastra</p>
+                </div>
+              </div>
+
+            </div>
+
+            <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF, WEBP — máx. 2 MB por imagen</p>
+
+            @error('images')
             <p class="text-xs text-red-400 mt-1">{{ $message }}</p>
             @enderror
+            @for($i = 0; $i < 5; $i++)
+              @error("images.$i")
+              <p class="text-xs text-red-400 mt-1">Imagen {{ $i + 1 }}: {{ $message }}</p>
+              @enderror
+            @endfor
           </div>
 
         </div>
@@ -229,35 +250,50 @@
   function postForm() {
     return {
       content: `{{ old('content') }}`,
-      preview: null,
       dragging: false,
+      slots: [
+        { preview: null }, { preview: null }, { preview: null },
+        { preview: null }, { preview: null },
+      ],
 
-      handleFile(event) {
+      get filled() {
+        return this.slots.filter(s => s.preview !== null).length;
+      },
+
+      handleSlot(index, event) {
         const file = event.target.files[0];
-        if (file) this.loadPreview(file);
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => { this.slots[index].preview = e.target.result; };
+        reader.readAsDataURL(file);
+      },
+
+      clearSlot(index) {
+        this.slots[index].preview = null;
+        this.$refs['slot' + index].value = '';
+      },
+
+      openNext() {
+        const next = this.slots.findIndex(s => s.preview === null);
+        if (next !== -1) this.$refs['slot' + next].click();
       },
 
       handleDrop(event) {
         this.dragging = false;
-        const file = event.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
+        Array.from(event.dataTransfer.files).forEach(file => {
+          if (!file.type.startsWith('image/')) return;
+          const next = this.slots.findIndex(s => s.preview === null);
+          if (next === -1) return;
+          // Asignar al input del slot
           const dt = new DataTransfer();
           dt.items.add(file);
-          this.$refs.imageInput.files = dt.files;
-          this.loadPreview(file);
-        }
+          this.$refs['slot' + next].files = dt.files;
+          // Mostrar preview
+          const reader = new FileReader();
+          reader.onload = (e) => { this.slots[next].preview = e.target.result; };
+          reader.readAsDataURL(file);
+        });
       },
-
-      loadPreview(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => { this.preview = e.target.result; };
-        reader.readAsDataURL(file);
-      },
-
-      clearImage() {
-        this.preview = null;
-        this.$refs.imageInput.value = '';
-      }
     }
   }
 </script>

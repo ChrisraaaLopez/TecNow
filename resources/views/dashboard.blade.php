@@ -26,14 +26,6 @@
         </svg>
         <span>Popular</span>
       </a>
-      <a href="{{ route('dashboard', ['sort' => 'trending']) }}"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg {{ $sort === 'trending' ? 'bg-secondary text-secondary-foreground' : 'hover:bg-sidebar-accent transition-colors' }}">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-        </svg>
-        <span>Trending</span>
-      </a>
     </nav>
     <div class="border-t border-sidebar-border pt-4">
       <div class="flex items-center justify-between mb-3 px-3">
@@ -85,11 +77,9 @@
   <main class="flex-1 px-4 lg:px-6 py-6">
     <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
       <div class="flex gap-2">
-        @foreach (['popular' => 'Popular', 'reciente' => 'Reciente', 'trending' => 'Trending'] as $key => $label)
-        <button @click="filter = '{{ $key }}'"
-          :class="filter === '{{ $key }}' ? 'bg-blue-700 text-white' :
-                                'bg-card hover:bg-muted text-foreground border border-border'"
-          class="px-4 py-2 rounded-lg transition-colors text-sm">
+        @foreach (['popular' => 'Popular', 'reciente' => 'Reciente'] as $key => $label)
+        <a href="{{ route('dashboard', ['sort' => $key]) }}"
+          class="px-4 py-2 rounded-lg transition-colors text-sm {{ $sort === $key ? 'bg-blue-700 text-white' : 'bg-card hover:bg-muted text-foreground border border-border' }}">
           {{ $label }}
         </a>
         @endforeach
@@ -105,7 +95,7 @@
     </div>
 
     {{-- Posts --}}
-    <div class="space-y-4">
+    <div class="space-y-4" id="posts-feed">
       @forelse($posts as $post)
       <div class="bg-card border border-border rounded-lg p-6" x-data="{ showReport: false }">
         <div class="flex items-center justify-between mb-4">
@@ -217,18 +207,25 @@
         </div>
         @endif
 
+        @php $imageUrls = $post->image_urls; @endphp
+
+        {{-- Título --}}
         <a href="{{ route('posts.show', $post) }}">
-          <h3 class="text-lg font-bold mb-2 hover:text-primary transition-colors">{{ $post->title }}</h3>
+          <h3 class="text-lg font-bold mb-2 hover:text-primary transition-colors leading-snug">{{ $post->title }}</h3>
         </a>
-        <p class="text-sm text-foreground whitespace-pre-wrap mb-4">{{ $post->content }}</p>
-        @if($post->image)
-        <a href="{{ route('posts.show', $post) }}" class="block mb-4 rounded-lg overflow-hidden border border-border">
-          <img src="{{ Storage::url($post->image) }}" alt="" class="w-full max-h-64 object-cover hover:opacity-95 transition-opacity" />
+
+        {{-- Primera imagen --}}
+        @if(count($imageUrls) > 0)
+        <a href="{{ route('posts.show', $post) }}" class="block mb-3 rounded-lg overflow-hidden border border-border">
+          <img src="{{ $imageUrls[0] }}" alt="" class="w-full max-h-72 object-cover hover:opacity-95 transition-opacity" />
         </a>
         @endif
 
+        {{-- Contenido truncado --}}
+        <p class="text-sm text-foreground line-clamp-4 mb-4">{{ $post->content }}</p>
+
         {{-- Contenedor de Karma y Comentarios --}}
-        <div class="flex items-center gap-1 mt-2" x-data="{
+        <div id="vote-bar-{{ $post->id }}" class="flex items-center gap-1 mt-2" x-data="{
                             karma: {{ $karma }},
                             userVote: {{ $userVote ?? 'null' }},
                             loading: false,
@@ -302,15 +299,33 @@
 
             {{-- Contador de comentarios --}}
             <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                <a href="{{ route('posts.show', $post) }}"
+                <a href="{{ route('posts.show', $post) }}#comentarios"
                    class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <span class="text-sm">{{ $post->comments->count() }}</span>
+                    <span id="comment-count-{{ $post->id }}" class="text-sm">{{ $post->comments->count() }}</span>
                 </a>
             </div>
+
+            {{-- Contador de imágenes --}}
+            @if(count($imageUrls) > 0)
+            <span class="text-gray-700 mx-1">·</span>
+            <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                <a href="{{ route('posts.show', $post) }}"
+                   class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span class="text-sm">{{ count($imageUrls) }}</span>
+                </a>
+            </div>
+            @endif
+
+            {{-- Botón compartir --}}
+            <x-share-button :post="$post" />
         </div>
       </div>
       @empty
@@ -463,4 +478,47 @@
     </form>
   </div>
 </div>
+<script>
+(function() {
+    const postIds = @json($posts->pluck('id'));
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+    function setup() {
+        // Suscribir a los posts actuales para votos y comentarios
+        postIds.forEach(function(postId) {
+            window.Echo.channel('posts.' + postId)
+                .listen('.PostVoted', function(e) {
+                    window.RealtimeUtils.updateVote(postId, e.karma);
+                })
+                .listen('.CommentAdded', function(e) {
+                    window.RealtimeUtils.updateCommentCount(postId, e.commentCount);
+                });
+        });
+
+        // Escuchar nuevas publicaciones y mostrarlas automáticamente
+        window.Echo.channel('feed').listen('.NewPost', function(e) {
+            fetch('/posts/' + e.postId + '/card', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(res) { return res.ok ? res.text() : null; })
+            .then(function(html) {
+                if (!html) return;
+                window.RealtimeUtils.prependPost(html);
+                // Suscribir al canal del nuevo post
+                window.Echo.channel('posts.' + e.postId)
+                    .listen('.PostVoted', function(ev) {
+                        window.RealtimeUtils.updateVote(e.postId, ev.karma);
+                    })
+                    .listen('.CommentAdded', function(ev) {
+                        window.RealtimeUtils.updateCommentCount(e.postId, ev.commentCount);
+                    });
+            })
+            .catch(function() {});
+        });
+    }
+
+    if (window.Echo) { setup(); }
+    else { window.addEventListener('echo-ready', setup, { once: true }); }
+})();
+</script>
 @endsection

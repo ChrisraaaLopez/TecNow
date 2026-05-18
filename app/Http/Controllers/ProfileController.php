@@ -13,7 +13,7 @@ class ProfileController extends Controller
     {
         $user = User::where('username', $username)->firstOrFail();
         $posts = $user->posts()
-            ->with('votes')
+            ->with(['votes', 'comments', 'sharedFrom.user'])
             ->latest()
             ->get();
 
