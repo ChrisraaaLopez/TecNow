@@ -165,8 +165,8 @@
 
         {{-- Panel de notificaciones --}}
         <div x-show="open" x-cloak
-          class="absolute right-0 mt-2 rounded-2xl shadow-2xl overflow-hidden"
-          style="background:#fff; border:1px solid #e5e7eb; z-index:999; top:100%; width:min(24rem, calc(100vw - 1rem))">
+          class="fixed rounded-2xl shadow-2xl overflow-hidden"
+          style="background:#fff; border:1px solid #e5e7eb; z-index:9999; top:73px; right:0.5rem; width:min(24rem, calc(100vw - 1rem))">
 
           {{-- Cabecera --}}
           <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid #f0f0f0">
@@ -361,21 +361,33 @@
 
     {{-- Comunidades del usuario --}}
     @php $mobileComunidades = Auth::user()->communities()->orderBy('tipo')->orderBy('name')->get(); @endphp
-    @if($mobileComunidades->isNotEmpty())
     <div style="border-top:1px solid rgba(255,255,255,0.15)" class="mt-2 pt-2">
       <p class="text-xs font-semibold uppercase tracking-wider px-3 py-1" style="color:rgba(255,255,255,0.45)">Mis Comunidades</p>
-      @foreach($mobileComunidades as $mc)
-      <a href="{{ route('communities.show', $mc) }}"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
-        style="color:rgba(255,255,255,0.9)"
+      @if($mobileComunidades->isNotEmpty())
+        @foreach($mobileComunidades as $mc)
+        <a href="{{ route('communities.show', $mc) }}"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
+          style="color:rgba(255,255,255,0.9)"
+          onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+          onmouseout="this.style.background='transparent'">
+          <x-community-icon :community="$mc" size="sm" />
+          <span class="truncate">{{ $mc->name }}</span>
+        </a>
+        @endforeach
+      @else
+        <p class="px-3 py-1 text-xs" style="color:rgba(255,255,255,0.5)">No te has unido a ninguna comunidad.</p>
+      @endif
+      <a href="{{ route('comunidades.index') }}"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mt-1"
+        style="color:rgba(255,255,255,0.7); border:1px dashed rgba(255,255,255,0.25); border-radius:0.5rem"
         onmouseover="this.style.background='rgba(255,255,255,0.1)'"
         onmouseout="this.style.background='transparent'">
-        <x-community-icon :community="$mc" size="sm" />
-        <span class="truncate">{{ $mc->name }}</span>
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+        </svg>
+        <span>Explorar todas las comunidades</span>
       </a>
-      @endforeach
     </div>
-    @endif
 
     {{-- Separador --}}
     <div style="border-top:1px solid rgba(255,255,255,0.15)" class="my-2"></div>

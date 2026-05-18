@@ -49,5 +49,17 @@ class CommunitiesSeeder extends Seeder
                 'created_by'  => $admin->id,
             ]
         );
+
+        // Comunidad de Mejoras y Sugerencias
+        Community::firstOrCreate(
+            ['slug' => 'mejoras-y-sugerencias'],
+            [
+                'name'        => 'Mejoras y Sugerencias',
+                'icon'        => '💡',
+                'description' => 'Espacio para proponer mejoras, reportar bugs y sugerir nuevas funcionalidades para TecNow.',
+                'tipo'        => 'general',
+                'created_by'  => $admin->id,
+            ]
+        );
     }
 }

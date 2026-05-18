@@ -19,6 +19,7 @@ Route::get('/', fn () => redirect('/dashboard'));
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/comunidades', [DashboardController::class, 'comunidades'])->name('comunidades.index');
 
     // Perfil propio
     Route::get('/perfil', [DashboardController::class, 'perfil'])->name('perfil');

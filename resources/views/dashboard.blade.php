@@ -59,11 +59,21 @@
           </div>
         </a>
         @endforeach
+        @foreach ($communities->where('tipo', 'general') as $community)
+        <a href="{{ route('communities.show', $community) }}"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors text-left">
+          <x-community-icon :community="$community" size="sm" />
+          <div class="flex-1 min-w-0">
+            <p class="text-sm truncate">{{ $community->name }}</p>
+            <p class="text-xs text-muted-foreground">{{ $community->users_count }} miembros</p>
+          </div>
+        </a>
+        @endforeach
       </div>
-      <button
-        class="w-full mt-3 px-3 py-2 text-sm text-primary hover:bg-sidebar-accent rounded-lg transition-colors">
-        Ver todas las comunidades
-      </button>
+      <a href="{{ route('comunidades.index') }}"
+        class="w-full mt-3 px-3 py-2 text-sm text-primary hover:bg-sidebar-accent rounded-lg transition-colors block text-center">
+        Explorar todas las comunidades →
+      </a>
       @if (Auth::user()->global_role === 'admin')
       <button @click="showCommunityModal = true"
         class="w-full mt-3 px-3 py-2 text-sm bg-primary text-white hover:bg-blue-700 rounded-lg transition-colors">

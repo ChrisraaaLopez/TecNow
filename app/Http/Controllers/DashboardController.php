@@ -46,6 +46,13 @@ class DashboardController extends Controller
         return view('dashboard', compact('communities', 'posts', 'sort', 'query', 'stats'));
     }
 
+    public function comunidades()
+    {
+        $communities     = Community::withCount('users')->orderBy('tipo')->orderBy('name')->get();
+        $userCommunityIds = Auth::user()->communities()->pluck('communities.id');
+        return view('comunidades.index', compact('communities', 'userCommunityIds'));
+    }
+
     public function perfil()
     {
         $user = Auth::user();
