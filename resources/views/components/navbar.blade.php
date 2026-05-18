@@ -1,4 +1,4 @@
-<header style="background:#1e40af; border-bottom:1px solid #1d3fa0;" class="sticky top-0 z-50">
+<header style="background:#1e40af; border-bottom:1px solid #1d3fa0;" class="sticky top-0 z-50" x-data="{ mobileOpen: false }">
   <div class="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
 
     {{-- Logo + búsqueda --}}
@@ -288,8 +288,131 @@
         </button>
       </form>
 
+      {{-- Botón hamburguesa (solo móvil/tablet) --}}
+      <button @click="mobileOpen = !mobileOpen"
+        class="lg:hidden p-2 rounded-lg transition-colors ml-1"
+        style="color:rgba(255,255,255,0.85)"
+        onmouseover="this.style.background='rgba(255,255,255,0.12)'"
+        onmouseout="this.style.background='transparent'">
+        <svg x-show="!mobileOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <svg x-show="mobileOpen" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
     </div>
   </div>
+
+  {{-- Menú móvil desplegable --}}
+  <div x-show="mobileOpen" x-cloak
+    style="background:#1e3a8a; border-top:1px solid rgba(255,255,255,0.12);"
+    class="lg:hidden px-4 pb-4 pt-3">
+
+    {{-- Buscador móvil --}}
+    <form method="GET" action="{{ route('dashboard') }}" class="mb-3">
+      <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+          style="color:rgba(255,255,255,0.5)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+        </svg>
+        <input type="text" name="q" value="{{ request('q') }}" placeholder="Buscar en TecNow..."
+          style="background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.2);"
+          class="w-full pl-10 pr-4 py-2 rounded-lg text-sm placeholder-white/40 focus:outline-none focus:border-white/50" />
+      </div>
+    </form>
+
+    {{-- Navegación --}}
+    <nav class="space-y-1 mb-3">
+      <a href="{{ route('dashboard') }}"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
+        style="color:rgba(255,255,255,0.9)"
+        onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+        onmouseout="this.style.background='transparent'">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6" />
+        </svg>
+        Inicio
+      </a>
+      <a href="{{ route('popular') }}"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
+        style="color:rgba(255,255,255,0.9)"
+        onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+        onmouseout="this.style.background='transparent'">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+        Popular
+      </a>
+      <a href="{{ route('posts.create') }}"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
+        style="color:rgba(255,255,255,0.9)"
+        onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+        onmouseout="this.style.background='transparent'">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Crear publicación
+      </a>
+    </nav>
+
+    {{-- Separador --}}
+    <div style="border-top:1px solid rgba(255,255,255,0.15)" class="my-2"></div>
+
+    {{-- Perfil del usuario --}}
+    <a href="{{ route('perfil') }}"
+      class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors mb-1"
+      style="color:#fff"
+      onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+      onmouseout="this.style.background='transparent'">
+      <div class="w-8 h-8 rounded-full overflow-hidden border-2 relative flex-shrink-0" style="border-color:rgba(255,255,255,0.4)">
+        <img src="{{ asset('avatars/' . Auth::user()->avatar) }}" class="w-full h-full object-cover" />
+        @if(Auth::user()->marco)
+        <img src="{{ asset('marcos/' . Auth::user()->marco) }}" class="absolute inset-0 w-full h-full object-cover z-10" />
+        @endif
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-white leading-tight">{{ Auth::user()->name }}</p>
+        <p class="text-xs" style="color:rgba(255,255,255,0.6)">&#64;{{ Auth::user()->username }}</p>
+      </div>
+    </a>
+
+    {{-- Panel Admin (si aplica) --}}
+    @if(Auth::user()->rol === 'admin')
+    <a href="{{ route('admin.index') }}"
+      class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors mb-1"
+      style="color:rgba(255,255,255,0.9)"
+      onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+      onmouseout="this.style.background='transparent'">
+      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+      Panel Admin
+    </a>
+    @endif
+
+    {{-- Cerrar sesión --}}
+    <form method="POST" action="{{ route('logout') }}">
+      @csrf
+      <button type="submit"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors"
+        style="color:rgba(255,255,255,0.9)"
+        onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+        onmouseout="this.style.background='transparent'">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Cerrar sesión
+      </button>
+    </form>
+  </div>
+
 </header>
 
 {{-- Alerta para usuarios suspendidos --}}

@@ -146,6 +146,7 @@
               rows="6"
               placeholder="¿Qué quieres compartir con tu comunidad?"
               required
+              maxlength="10000"
               x-model="content"
               class="w-full px-4 py-2.5 rounded-lg border bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-primary transition-colors resize-none
                      {{ $errors->has('content') ? 'border-red-500' : 'border-gray-300' }}">{{ old('content') }}</textarea>
@@ -155,7 +156,9 @@
               @else
               <span></span>
               @enderror
-              <p class="text-xs text-gray-500 text-right" x-text="content.length + ' caracteres'"></p>
+              <p class="text-xs text-right font-medium transition-colors"
+                 :class="content.length >= 9500 ? 'text-red-500' : content.length >= 9000 ? 'text-yellow-600' : 'text-gray-400'"
+                 x-text="content.length.toLocaleString() + ' / 10,000'"></p>
             </div>
           </div>
 

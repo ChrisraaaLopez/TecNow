@@ -28,7 +28,7 @@ class PostController extends Controller
     {
         $validated = $request->validate([
             'title'        => 'required|string|max:255',
-            'content'      => 'required|string',
+            'content'      => 'required|string|max:10000',
             'community_id' => 'nullable|exists:communities,id',
             'images'       => 'nullable|array|max:5',
             'images.*'     => 'image|mimes:jpg,jpeg,png,gif,webp|max:2048',
