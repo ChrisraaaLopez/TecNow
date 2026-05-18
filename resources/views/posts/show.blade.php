@@ -230,21 +230,30 @@
           </div>
         @elseif(count($imageUrls) > 1)
           {{-- Carrusel --}}
-          <div class="mt-4 rounded-lg overflow-hidden border border-border relative"
+          {{-- height fijo en el wrapper para que las flechas absolutas sean visibles antes de Alpine --}}
+          <div class="mt-4 rounded-lg overflow-hidden border border-border"
+               style="position:relative; height:480px;"
                x-data="{ current: 0, total: {{ count($imageUrls) }} }">
 
-            {{-- Imágenes --}}
+            {{-- Slides: el primero visible, los demás ocultos con style inline --}}
             @foreach($imageUrls as $i => $url)
-            <div x-show="current === {{ $i }}" x-cloak class="relative bg-black" style="height:480px">
-              <img src="{{ $url }}" alt="" class="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-50 pointer-events-none select-none" />
-              <img src="{{ $url }}" alt="Imagen {{ $i + 1 }}" class="relative w-full h-full object-contain z-10" />
+            <div x-show="current === {{ $i }}"
+                 style="{{ $i > 0 ? 'display:none;' : '' }}position:absolute;inset:0;height:100%;"
+                 class="bg-black">
+              {{-- Fondo borroso --}}
+              <img src="{{ $url }}" alt=""
+                   style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.1);filter:blur(12px);opacity:0.5;pointer-events:none;user-select:none;" />
+              {{-- Imagen principal — z-index 10 dentro del slide, NO compite con flechas que están fuera --}}
+              <img src="{{ $url }}" alt="Imagen {{ $i + 1 }}"
+                   style="position:relative;width:100%;height:100%;object-fit:contain;z-index:10;" />
             </div>
             @endforeach
 
-            {{-- Flecha anterior --}}
+            {{-- Flecha anterior — z-index 30 para quedar siempre encima de las imágenes --}}
             <button type="button"
-              @click="current = (current - 1 + total) % total"
-              class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white rounded-full p-2 transition-colors">
+              @click.stop="current = (current - 1 + total) % total"
+              style="position:absolute;left:0.5rem;top:50%;transform:translateY(-50%);z-index:30;"
+              class="bg-black/50 hover:bg-black/75 text-white rounded-full p-2 transition-colors">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
               </svg>
@@ -252,21 +261,23 @@
 
             {{-- Flecha siguiente --}}
             <button type="button"
-              @click="current = (current + 1) % total"
-              class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white rounded-full p-2 transition-colors">
+              @click.stop="current = (current + 1) % total"
+              style="position:absolute;right:0.5rem;top:50%;transform:translateY(-50%);z-index:30;"
+              class="bg-black/50 hover:bg-black/75 text-white rounded-full p-2 transition-colors">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
               </svg>
             </button>
 
-            {{-- Puntos indicadores --}}
-            <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+            {{-- Puntos indicadores — también z-index 30 --}}
+            <div style="position:absolute;bottom:0.75rem;left:50%;transform:translateX(-50%);z-index:30;"
+                 class="flex items-center gap-1.5">
               @foreach($imageUrls as $i => $url)
-              <button type="button" @click="current = {{ $i }}"
+              <button type="button" @click.stop="current = {{ $i }}"
                 :class="current === {{ $i }}
                   ? 'bg-white w-2.5 h-2.5'
                   : 'bg-white/50 hover:bg-white/80 w-2 h-2'"
-                class="rounded-full transition-all duration-200">
+                class="rounded-full transition-all duration-200 block">
               </button>
               @endforeach
             </div>

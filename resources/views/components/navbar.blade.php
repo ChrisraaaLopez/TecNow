@@ -143,7 +143,7 @@
 
       {{-- Campana con popup --}}
       <div class="relative">
-        <button x-ref="bellBtn" @click="open = !open; if(open) { posicionarPanel(); cargar(); }"
+        <button @click="open = !open; if(open) { posicionarPanel($el); cargar(); }"
           class="relative p-2 rounded-lg transition-colors"
           style="color:rgba(255,255,255,0.8)"
           onmouseover="this.style.background='rgba(255,255,255,0.12)'"
@@ -530,23 +530,19 @@ function notificacionesPanel() {
     sinLeer: {{ Auth::user()->unreadNotifications->count() }},
     panelStyle: 'top:70px; right:4px; width:min(24rem, calc(100vw - 8px))',
 
-    // Calcula la posición del panel justo debajo del botón de campana
-    posicionarPanel() {
-      this.$nextTick(() => {
-        const btn = this.$refs.bellBtn;
-        if (!btn) return;
-        const rect = btn.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const panelW = Math.min(384, vw - 8);   // 384px = 24rem
-        // Alinear el borde derecho del panel con el del botón
-        let right = vw - rect.right;
-        if (right < 4) right = 4;
-        // Si el panel se saldría por la izquierda, ajustar
-        if ((vw - right - panelW) < 4) {
-          right = Math.max(4, vw - panelW - 4);
-        }
-        this.panelStyle = `top:${Math.round(rect.bottom + 6)}px; right:${Math.round(right)}px; width:${panelW}px`;
-      });
+    // Calcula la posición del panel justo debajo del botón de campana.
+    // Recibe el elemento botón directamente via $el (sin $refs ni $nextTick).
+    posicionarPanel(btn) {
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const vw   = window.innerWidth;
+      const panelW = Math.min(384, vw - 8);      // máx. 24rem o viewport - 8px
+      let right = vw - rect.right;               // alinear borde derecho con botón
+      if (right < 4) right = 4;                  // no salir por la derecha
+      if ((vw - right - panelW) < 4) {           // no salir por la izquierda
+        right = Math.max(4, vw - panelW - 4);
+      }
+      this.panelStyle = `top:${Math.round(rect.bottom + 6)}px; right:${Math.round(right)}px; width:${panelW}px`;
     },
 
     init() {
@@ -603,42 +599,43 @@ function notificacionesPanel() {
       });
     },
 
+    // Headers comunes para todas las peticiones AJAX
+    _headers() {
+      return {
+        'Content-Type':     'application/json',
+        'X-CSRF-TOKEN':     document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+        'X-Requested-With': 'XMLHttpRequest',
+      };
+    },
+
     async cargar() {
       this.cargando = true;
       try {
-        const res = await fetch('{{ route('notifications.json') }}');
+        const res  = await fetch('{{ route('notifications.json') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         const data = await res.json();
-        this.notifs = data.notifs;
+        this.notifs  = data.notifs;
         this.sinLeer = data.sinLeer;
         if (data.sinLeer > 0) {
-          await fetch('{{ route('notifications.readAll') }}', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
-          });
+          await fetch('{{ route('notifications.readAll') }}', { method: 'POST', headers: this._headers() });
           this.sinLeer = 0;
+          // Marcar visualmente todas como leídas
+          this.notifs = this.notifs.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() }));
         }
-      } catch(e) { console.error(e); }
+      } catch(e) { console.error('[Notif] Error al cargar:', e); }
       this.cargando = false;
     },
 
     async marcarTodas() {
-      await fetch('{{ route('notifications.readAll') }}', {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
-      });
-      this.notifs = this.notifs.map(n => ({ ...n, read_at: new Date().toISOString() }));
+      await fetch('{{ route('notifications.readAll') }}', { method: 'POST', headers: this._headers() });
+      this.notifs  = this.notifs.map(n => ({ ...n, read_at: new Date().toISOString() }));
       this.sinLeer = 0;
     },
 
     async irA(n) {
-      // La URL puede estar en n.data.url (notif. de BD) o directamente en n.data (broadcast)
       const url = n.data?.url || null;
       if (!n.read_at) {
         try {
-          await fetch(`/notificaciones/${n.id}/leer`, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
-          });
+          await fetch(`/notificaciones/${n.id}/leer`, { method: 'POST', headers: this._headers() });
         } catch(e) {}
         n.read_at = new Date().toISOString();
         this.sinLeer = Math.max(0, this.sinLeer - 1);
