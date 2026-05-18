@@ -126,144 +126,156 @@
     {{-- Lista de posts --}}
     <div class="space-y-4">
       @foreach($posts as $post)
-      <div class="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors">
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex-1 min-w-0">
-            {{-- Indicador de post compartido --}}
-            @if($post->shared_from_post_id)
-            <div class="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
-              </svg>
-              Compartido
-              @if($post->sharedFrom)
-              · <a href="{{ route('posts.show', $post->sharedFrom) }}" class="text-blue-500 hover:underline">Ver original</a>
-              @endif
-            </div>
-            @endif
-            {{-- Título --}}
-            <a href="{{ route('posts.show', $post) }}">
-              <h3 class="text-lg font-bold mb-2 hover:text-primary transition-colors">{{ $post->title }}</h3>
-            </a>
+      @php
+        $karma    = $post->votes->sum('vote');
+        $userVote = $post->votes->where('user_id', Auth::id())->first()?->vote;
+        $imageUrls = $post->image_urls;
+      @endphp
+      <div class="relative border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors"
+           x-data="{
+             karma: {{ $karma }},
+             userVote: {{ $userVote ?? 'null' }},
+             loading: false,
+             async vote(value) {
+               if (this.loading) return;
+               this.loading = true;
+               try {
+                 const res = await fetch('{{ route('posts.vote', $post) }}', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                   body: JSON.stringify({ vote: value }),
+                 });
+                 const data = await res.json();
+                 this.karma = data.karma;
+                 this.userVote = data.user_vote;
+               } finally { this.loading = false; }
+             }
+           }">
 
-            {{-- Contenido --}}
-            <a href="{{ route('posts.show', $post) }}">
-              <p class="text-xs text-gray-400 mt-1 line-clamp-2">{{ $post->content }}</p>
-            </a>
-
-            <p class="text-xs text-muted-foreground mt-2">{{ $post->created_at->diffForHumans() }}</p>
-
-            {{-- Gestor de Karma --}}
-            {{-- Karma --}}
-            @php
-            $karma = $post->votes->sum('vote');
-            $userVote = $post->votes->where('user_id', Auth::id())->first()?->vote;
-            @endphp
-            {{-- Karma --}}
-            <div class="flex items-center gap-1 mt-2"
-              x-data="{
-                                            karma: {{ $karma }},
-                                            userVote: {{ $userVote ?? 'null' }},
-                                            loading: false,
-                                            async vote(value) {
-                                                if (this.loading) return;
-                                                this.loading = true;
-                                                try {
-                                                    const res = await fetch('{{ route('posts.vote', $post) }}', {
-                                                        method: 'POST',
-                                                        headers: {
-                                                            'Content-Type': 'application/json',
-                                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                                        },
-                                                        body: JSON.stringify({ vote: value }),
-                                                    });
-                                                    const data = await res.json();
-                                                    this.karma = data.karma;
-                                                    this.userVote = data.user_vote;
-
-                                                } finally {
-                                                    this.loading = false;
-                                                }
-                                            }
-                                        }">
-
-              {{-- Upvote --}}
-              <button type="button" @click="vote(1)"
-                :disabled="loading"
-                :class="userVote === 1
-                                                    ? 'text-orange-400 bg-orange-500/10'
-                                                    : 'text-gray-400 hover:text-orange-400 hover:bg-orange-500/10'"
-                class="relative group p-1.5 rounded-lg transition-colors">
-                <svg class="w-4 h-4" :fill="userVote === 1 ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                </svg>
-                <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded
-                                             opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Upvote
-                </span>
-              </button>
-
-              {{-- Contador --}}
-              <span class="text-sm font-semibold min-w-[2rem] text-center"
-                :class="karma > 0 ? 'text-orange-400' : karma < 0 ? 'text-blue-400' : 'text-gray-400'"
-                x-text="karma">
-              </span>
-
-              {{-- Downvote --}}
-              <button type="button" @click="vote(-1)"
-                :disabled="loading"
-                :class="userVote === -1
-                                                    ? 'text-blue-400 bg-blue-500/10'
-                                                    : 'text-gray-400 hover:text-blue-400 hover:bg-blue-500/10'"
-                class="relative group p-1.5 rounded-lg transition-colors">
-                <svg class="w-4 h-4" :fill="userVote === -1 ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-                <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded
-                                             opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Downvote
-                </span>
-              </button>
-            </div>
-            {{-- Fin del gestor de Karma--}}
-
-          </div>
-
-          <div class="flex items-center gap-2 flex-shrink-0">
-
-            {{-- Editar --}}
-            <a href="{{ route('posts.edit', $post) }}"
-              class="relative group p-1.5 rounded-lg text-blue-500 hover:bg-blue-500/10 transition-colors">
+        {{-- Editar / Eliminar — posición absoluta, no consumen espacio del layout --}}
+        <div class="absolute top-3 right-3 flex items-center gap-1">
+          <a href="{{ route('posts.edit', $post) }}"
+            class="relative group p-1.5 rounded-lg text-blue-500 hover:bg-blue-500/10 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Editar</span>
+          </a>
+          <form action="{{ route('posts.destroy', $post) }}" method="POST">
+            @csrf @method('DELETE')
+            <button type="submit" onclick="return confirm('¿Eliminar esta publicación?')"
+              class="relative group p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
-              <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded
-                                                        opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                Editar
-              </span>
-            </a>
+              <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Eliminar</span>
+            </button>
+          </form>
+        </div>
 
-            {{-- Eliminar --}}
-            <form action="{{ route('posts.destroy', $post) }}" method="POST">
-              @csrf
-              @method('DELETE')
-              <button type="submit"
-                onclick="return confirm('¿Eliminar esta publicación?')"
-                class="relative group p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded
-                                                        opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Eliminar
-                </span>
-              </button>
-            </form>
+        {{-- Contenido: ocupa todo el ancho disponible --}}
+        <div class="mb-3 pr-16">
 
+          {{-- Indicador compartido --}}
+          @if($post->shared_from_post_id)
+          <div class="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+            </svg>
+            Compartido
+            @if($post->sharedFrom)
+            · <a href="{{ route('posts.show', $post->sharedFrom) }}" class="text-blue-500 hover:underline">Ver original</a>
+            @endif
           </div>
+          @endif
+
+          {{-- Título + miniatura --}}
+          <div class="flex gap-3">
+            <div class="flex-1 min-w-0">
+              <a href="{{ route('posts.show', $post) }}">
+                <h3 class="text-base font-bold mb-1 hover:text-primary transition-colors leading-snug">{{ $post->title }}</h3>
+              </a>
+              <p class="text-xs text-gray-600 line-clamp-4">{{ $post->content }}</p>
+            </div>
+
+            @if(count($imageUrls) > 0)
+            <a href="{{ route('posts.show', $post) }}" class="flex-shrink-0 self-start">
+              <div class="relative w-24 h-24 rounded-lg overflow-hidden border border-border">
+                <img src="{{ $imageUrls[0] }}" alt="" class="w-full h-full object-cover hover:opacity-90 transition-opacity" />
+                @if(count($imageUrls) > 1)
+                <div class="absolute bottom-1 right-1 bg-black/60 rounded px-1 py-0.5">
+                  <span class="text-white text-xs font-medium">+{{ count($imageUrls) - 1 }}</span>
+                </div>
+                @endif
+              </div>
+            </a>
+            @endif
+          </div>
+
+          <p class="text-xs text-muted-foreground mt-2">{{ $post->created_at->diffForHumans() }}</p>
+        </div>
+
+        {{-- Barra de acciones --}}
+        <div class="flex items-center gap-1">
+
+          {{-- Karma --}}
+          <div class="flex items-center bg-gray-100 rounded-lg">
+            <button type="button" @click="vote(1)" :disabled="loading"
+              :class="userVote === 1 ? 'text-orange-400 bg-orange-500/10' : 'text-gray-400 hover:text-orange-400 hover:bg-orange-500/10'"
+              class="relative group p-1.5 rounded-lg transition-colors">
+              <svg class="w-4 h-4" :fill="userVote === 1 ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+              </svg>
+              <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Upvote</span>
+            </button>
+            <span class="text-sm font-semibold min-w-[2rem] text-center"
+              :class="karma > 0 ? 'text-orange-400' : karma < 0 ? 'text-blue-400' : 'text-gray-400'"
+              x-text="karma"></span>
+            <button type="button" @click="vote(-1)" :disabled="loading"
+              :class="userVote === -1 ? 'text-blue-400 bg-blue-500/10' : 'text-gray-400 hover:text-blue-400 hover:bg-blue-500/10'"
+              class="relative group p-1.5 rounded-lg transition-colors">
+              <svg class="w-4 h-4" :fill="userVote === -1 ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+              <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Downvote</span>
+            </button>
+          </div>
+
+          <span class="text-gray-700 mx-1">·</span>
+
+          {{-- Comentarios --}}
+          <div class="flex items-center bg-gray-100 rounded-lg p-1">
+            <a href="{{ route('posts.show', $post) }}#comentarios"
+               class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span class="text-sm">{{ $post->comments->count() }}</span>
+            </a>
+          </div>
+
+          {{-- Imágenes --}}
+          @if(count($imageUrls) > 0)
+          <span class="text-gray-700 mx-1">·</span>
+          <div class="flex items-center bg-gray-100 rounded-lg p-1">
+            <a href="{{ route('posts.show', $post) }}"
+               class="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span class="text-sm">{{ count($imageUrls) }}</span>
+            </a>
+          </div>
+          @endif
+
+          {{-- Compartir --}}
+          <x-share-button :post="$post" />
+
         </div>
       </div>
       @endforeach
